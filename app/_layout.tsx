@@ -152,7 +152,7 @@ function NotificationNavigationHandler({ onReady }: NotificationNavigationHandle
           // Default body-tap should open the tracker hub after unlock.
           if (
             isDefaultAction(actionId)
-            && (notificationType === 'activity_reminder' || notificationType === 'evening_reminder')
+            && notificationType === 'activity_reminder'
           ) {
             navigateOrDefer('/(tabs)/(home)', 0);
             return;
@@ -192,8 +192,6 @@ function NotificationNavigationHandler({ onReady }: NotificationNavigationHandle
             const type = data?.type as string | undefined;
             if (type === 'activity_reminder') {
               navigateOrDefer('/(tabs)/(home)');
-            } else if (type === 'evening_reminder') {
-              navigateOrDefer('/add-food');
             } else if (type === 'fasting') {
               navigateOrDefer('/(tabs)/(home)');
             } else if (type) {
@@ -214,7 +212,7 @@ function NotificationNavigationHandler({ onReady }: NotificationNavigationHandle
 
             if (
               isDefaultAction(actionId)
-              && (notificationType === 'activity_reminder' || notificationType === 'evening_reminder')
+              && notificationType === 'activity_reminder'
             ) {
               pendingPostUnlockRoute = '/(tabs)/(home)';
               return;

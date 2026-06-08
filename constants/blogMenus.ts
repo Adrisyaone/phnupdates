@@ -30,17 +30,17 @@ export interface DashboardMenuDefinition {
 }
 
 export const MENU_THEME_COLORS: Record<DashboardMenuKey, string> = {
-  opportunities: '#2563EB',
-  dashboards: '#0D9488',
-  news: '#EA580C',
-  articles: '#4F46E5',
-  factsheet: '#0891B2',
-  literatures: '#DB2777',
-  'exam-preparation': '#16A34A',
-  books: '#7C3AED',
-  calculator: '#F97316',
-  'selected-blogs': '#7C3AED',
-  'keep-notes': '#0F766E',
+  opportunities: '#3B82F6',
+  dashboards: '#2DD4BF',
+  news: '#F97316',
+  articles: '#818CF8',
+  factsheet: '#22D3EE',
+  literatures: '#F472B6',
+  'exam-preparation': '#4ADE80',
+  books: '#A78BFA',
+  calculator: '#FB923C',
+  'selected-blogs': '#C084FC',
+  'keep-notes': '#34D399',
 };
 
 export const JOB_PORTAL_LABELS = ['vacancy', 'Opportunities'];

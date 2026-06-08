@@ -38,8 +38,6 @@ export interface NotificationSettings {
   activityReminderTimes: ReminderTime[];
   activityReminderDays: boolean[];
   calorieAlertEnabled: boolean;
-  eveningReminderEnabled: boolean;
-  eveningReminderTimes: ReminderTime[];
   healthTipReminderEnabled: boolean;
   healthTipReminderTimes: ReminderTime[];
   quoteReminderEnabled: boolean;
@@ -108,7 +106,6 @@ export interface DashboardWidgets {
   weeklySummary: boolean;
   offlineStatus: boolean;
   medicationAdherence: boolean;
-  assessmentScores: boolean;
   quickTools: boolean;
   history: boolean;
 }
@@ -146,7 +143,6 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetKey, string> = {
   weeklySummary: 'Weekly Summary',
   offlineStatus: 'Sync and Backup Status',
   medicationAdherence: 'Medication Adherence',
-  assessmentScores: 'Assessment Scores',
   quickTools: 'Quick Tools',
   history: 'Calendar History',
 };
@@ -169,7 +165,6 @@ export const DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = [
   'glucoseChart',
   'fasting',
   'medicationAdherence',
-  'assessmentScores',
   'quickTools',
   'history',
   'offlineStatus',
@@ -242,7 +237,6 @@ const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgets = {
   weeklySummary: false,
   offlineStatus: false,
   medicationAdherence: true,
-  assessmentScores: true,
   quickTools: true,
   history: true,
 };
@@ -287,8 +281,6 @@ const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   activityReminderTimes: [{ id: '1', hour: 18, minute: 0 }],
   activityReminderDays: [false, true, true, true, true, true, false],
   calorieAlertEnabled: false,
-  eveningReminderEnabled: true,
-  eveningReminderTimes: [{ id: '1', hour: 20, minute: 0 }],
   healthTipReminderEnabled: true,
   healthTipReminderTimes: [{ id: '1', hour: 7, minute: 0 }],
   quoteReminderEnabled: true,
@@ -347,7 +339,6 @@ const CALORIE_LOG_CATEGORY = 'calorie-log-actions';
 function hasAnyScheduledReminderEnabled(settings: NotificationSettings): boolean {
   return Boolean(
     settings.activityReminderEnabled
-    || settings.eveningReminderEnabled
     || settings.healthTipReminderEnabled
     || settings.quoteReminderEnabled
     || settings.publicHealthDayReminderEnabled
@@ -498,32 +489,6 @@ const performScheduleAllNotifications = async (settings: NotificationSettings, l
       }
     } else {
       // Activity reminders are disabled; nothing to schedule.
-    }
-
-    if (settings.eveningReminderEnabled) {
-      const logReminderTimes = settings.eveningReminderTimes?.length
-        ? settings.eveningReminderTimes
-        : DEFAULT_NOTIFICATION_SETTINGS.eveningReminderTimes;
-      for (const reminderTime of logReminderTimes) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: getTranslation(lang, 'eveningReminderTitle'),
-            body: getTranslation(lang, 'eveningReminderBody'),
-            sound: 'default',
-            vibrate: [0, 250, 250, 250],
-            data: { type: 'evening_reminder' },
-            ...(Platform.OS === 'android' ? { channelId: 'daily-reminders' } : {}),
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: reminderTime.hour,
-            minute: reminderTime.minute,
-          },
-        });
-        console.log(`[SettingsContext] Scheduled log reminder at ${reminderTime.hour}:${reminderTime.minute}`);
-      }
-    } else {
-      console.log('[SettingsContext] Log reminder disabled');
     }
 
     if (settings.healthTipReminderEnabled) {
@@ -746,7 +711,7 @@ const scheduleAllNotifications = async (settings: NotificationSettings, lang: La
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {
   const [language, setLanguageState] = useState<Language>('en');
-  const [theme, setThemeState] = useState<ThemePreference>('light');
+  const [theme, setThemeState] = useState<ThemePreference>('dark');
   const [notificationSettings, setNotificationSettingsState] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [appLockSettings, setAppLockSettingsState] = useState<AppLockSettings>(DEFAULT_APP_LOCK_SETTINGS);
   const [isLocked, setIsLocked] = useState(false);
@@ -874,11 +839,6 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       }
       if (storedNotifications) {
         const parsed = JSON.parse(storedNotifications);
-        const migratedEveningTimes = parsed.eveningReminderTimes?.length
-          ? parsed.eveningReminderTimes
-          : (typeof parsed.eveningReminderHour === 'number' && typeof parsed.eveningReminderMinute === 'number')
-            ? [{ id: '1', hour: parsed.eveningReminderHour, minute: parsed.eveningReminderMinute }]
-            : DEFAULT_NOTIFICATION_SETTINGS.eveningReminderTimes;
         const migratedHealthTipTimes = parsed.healthTipReminderTimes?.length
           ? parsed.healthTipReminderTimes
           : (typeof parsed.healthTipReminderHour === 'number' && typeof parsed.healthTipReminderMinute === 'number')
@@ -902,7 +862,6 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
           activityReminderDays: parsed.activityReminderDays?.length === 7
             ? parsed.activityReminderDays
             : DEFAULT_NOTIFICATION_SETTINGS.activityReminderDays,
-          eveningReminderTimes: migratedEveningTimes,
           healthTipReminderTimes: migratedHealthTipTimes,
           quoteReminderTimes: migratedQuoteTimes,
           publicHealthDayReminderTimes: migratedPublicHealthDayTimes,

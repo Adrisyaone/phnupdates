@@ -6,12 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "phnupdates",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#071929"
     },
     "ios": {
       "supportsTablet": false,
@@ -21,7 +21,7 @@
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#071929"
       },
       "package": "app.publichealthnepalupdates.com",
       "permissions": [

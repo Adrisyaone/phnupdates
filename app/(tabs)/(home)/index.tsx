@@ -505,7 +505,7 @@ export default function DashboardScreen() {
     {
       title: 'Community',
       subtitle: 'Social links and community channels.',
-      keys: ['nagarik-awaz', 'fb-page', 'our-youtube'],
+      keys: ['fb-page', 'our-youtube'],
     },
     {
       title: 'Settings',

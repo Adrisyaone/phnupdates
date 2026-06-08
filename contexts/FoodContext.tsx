@@ -22,7 +22,6 @@ const APP_EXPORT_KEYS = [
   ACTIVITIES_KEY,
   WEIGHT_KEY,
   ONBOARDING_KEY,
-  'health_assessment_results',
   'blood_pressure_entries',
   'blood_glucose_entries',
   'fasting_data',
@@ -55,7 +54,6 @@ const APP_STORAGE_IMPORT_KEYS = [
   ACTIVITIES_KEY,
   WEIGHT_KEY,
   ONBOARDING_KEY,
-  'health_assessment_results',
   'blood_pressure_entries',
   'blood_glucose_entries',
   'fasting_data',
@@ -740,13 +738,12 @@ export const [FoodProvider, useFood] = createContextHook(() => {
 
   const loadExtraDataForExport = useCallback(async () => {
     try {
-      const [bpData, bgData, fastingHistory, medsData, medLogsData, assessmentsData] = await Promise.all([
+      const [bpData, bgData, fastingHistory, medsData, medLogsData] = await Promise.all([
         AsyncStorage.getItem('blood_pressure_entries'),
         AsyncStorage.getItem('blood_glucose_entries'),
         AsyncStorage.getItem('fasting_history'),
         AsyncStorage.getItem('healthme_medications'),
         AsyncStorage.getItem('healthme_medication_logs'),
-        AsyncStorage.getItem('health_assessment_results'),
       ]);
       return {
         bloodPressure: bpData ? JSON.parse(bpData) as { id: string; systolic: number; diastolic: number; pulse?: number; timestamp: number; notes?: string }[] : [],
@@ -754,11 +751,10 @@ export const [FoodProvider, useFood] = createContextHook(() => {
         fastingHistory: fastingHistory ? JSON.parse(fastingHistory) as { id: string; fastingType: string; startTime: number; endTime: number; duration: number; completed: boolean; note?: string }[] : [],
         medications: medsData ? JSON.parse(medsData) as { id: string; name: string; dosage: string; unit: string; frequency: string; category: string; isActive: boolean; times: { hour: number; minute: number; label: string }[] }[] : [],
         medicationLogs: medLogsData ? JSON.parse(medLogsData) as { id: string; medicationId: string; scheduledTime: number; takenTime?: number; status: string; date: string }[] : [],
-        assessments: assessmentsData ? JSON.parse(assessmentsData) as any[] : [],
       };
     } catch (error) {
       console.error('[FoodContext] Error loading extra export data:', error);
-      return { bloodPressure: [], bloodGlucose: [], fastingHistory: [], medications: [], medicationLogs: [], assessments: [] };
+      return { bloodPressure: [], bloodGlucose: [], fastingHistory: [], medications: [], medicationLogs: [] };
     }
   }, []);
 
@@ -822,7 +818,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
       let importedFasting = 0;
       let importedMeds = 0;
       let importedMedLogs = 0;
-      let importedAssessments = 0;
 
       if (Array.isArray(data.entries) && data.entries.length > 0) {
         const newEntries: FoodEntry[] = data.entries
@@ -963,18 +958,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
         }
       }
 
-      if (Array.isArray(data.assessments) && data.assessments.length > 0) {
-        const existingAssessmentsRaw = await AsyncStorage.getItem('health_assessment_results');
-        const currentAssessments: any[] = existingAssessmentsRaw ? JSON.parse(existingAssessmentsRaw) : [];
-        const existingKeys = new Set(currentAssessments.map((a: any) => `${a.assessmentId}-${a.date}`));
-        const toAdd = data.assessments.filter((a: any) => a?.assessmentId && a?.date && !existingKeys.has(`${a.assessmentId}-${a.date}`));
-        if (toAdd.length > 0) {
-          const merged = [...currentAssessments, ...toAdd].sort((a: any, b: any) => (b.date || 0) - (a.date || 0));
-          await AsyncStorage.setItem('health_assessment_results', JSON.stringify(merged));
-          importedAssessments = toAdd.length;
-        }
-      }
-
       if (data.profile && typeof data.profile === 'object') {
         const importedProfile = sanitizeProfileInput(data.profile, profile);
         setProfile(importedProfile);
@@ -987,7 +970,7 @@ export const [FoodProvider, useFood] = createContextHook(() => {
         await AsyncStorage.setItem(GOALS_KEY, JSON.stringify(importedGoals));
       }
 
-      const totalImported = importedFood + importedActivities + importedWeight + importedBP + importedBG + importedFasting + importedMeds + importedMedLogs + importedAssessments;
+      const totalImported = importedFood + importedActivities + importedWeight + importedBP + importedBG + importedFasting + importedMeds + importedMedLogs;
       console.log('[FoodContext] JSON import complete. Total new records:', totalImported);
       if (totalImported > 0 || data.profile || data.goals) {
         markSyncPending();
@@ -1002,7 +985,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
       if (importedFasting > 0) summary.push(`${importedFasting} fasting records`);
       if (importedMeds > 0) summary.push(`${importedMeds} medications`);
       if (importedMedLogs > 0) summary.push(`${importedMedLogs} medication logs`);
-      if (importedAssessments > 0) summary.push(`${importedAssessments} assessment records`);
       if (data.profile) summary.push('profile');
       if (data.goals) summary.push('daily goals');
 
@@ -1063,7 +1045,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
       let importedFasting = 0;
       let importedMeds = 0;
       let importedMedLogs = 0;
-      let importedAssessments = 0;
 
       if (sections['FOOD ENTRIES'] && sections['FOOD ENTRIES'].length > 1) {
         const rows = sections['FOOD ENTRIES'].slice(1);
@@ -1297,61 +1278,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
         }
       }
 
-      if (sections['ASSESSMENTS'] && sections['ASSESSMENTS'].length > 1) {
-        const rows = sections['ASSESSMENTS'].slice(1);
-        const existingAssessmentsRaw = await AsyncStorage.getItem('health_assessment_results');
-        const currentAssessments: any[] = existingAssessmentsRaw ? JSON.parse(existingAssessmentsRaw) : [];
-        const parsedAssessments = rows
-          .map((row) => {
-            const date = parseDateTime(row[0] || '', row[1] || '');
-            const score = Number.parseFloat(row[3] || '0');
-            const min = Number.parseFloat(row[5] || '0');
-            const max = Number.parseFloat(row[6] || '0');
-            const answersRaw = row[9] || '{}';
-            let answers: Record<string, number> = {};
-
-            try {
-              const parsedAnswers = JSON.parse(answersRaw);
-              if (parsedAnswers && typeof parsedAnswers === 'object' && !Array.isArray(parsedAnswers)) {
-                answers = Object.fromEntries(
-                  Object.entries(parsedAnswers)
-                    .map(([k, v]) => [k, Number(v)])
-                    .filter(([, v]) => Number.isFinite(v))
-                );
-              }
-            } catch {
-              answers = {};
-            }
-
-            const assessmentId = (row[2] || '').trim();
-            if (!assessmentId || !Number.isFinite(date) || !Number.isFinite(score)) return null;
-
-            return {
-              assessmentId,
-              score,
-              scoreRange: {
-                min: Number.isFinite(min) ? min : 0,
-                max: Number.isFinite(max) ? max : 0,
-                label: (row[4] || '').trim() || 'Unknown',
-                color: (row[7] || '').trim() || '#6B7280',
-                description: (row[8] || '').trim() || '',
-              },
-              date,
-              answers,
-            };
-          })
-          .filter((a): a is any => !!a);
-
-        const existingKeys = new Set(currentAssessments.map((a: any) => `${a.assessmentId}-${a.date}`));
-        const toAdd = parsedAssessments.filter((a) => !existingKeys.has(`${a.assessmentId}-${a.date}`));
-
-        if (toAdd.length > 0) {
-          const merged = [...currentAssessments, ...toAdd].sort((a: any, b: any) => (b.date || 0) - (a.date || 0));
-          await AsyncStorage.setItem('health_assessment_results', JSON.stringify(merged));
-          importedAssessments = toAdd.length;
-        }
-      }
-
       if (sections['PROFILE'] && sections['PROFILE'].length > 1) {
         const row = sections['PROFILE'][1];
         if (row && row.length >= 5) {
@@ -1386,7 +1312,7 @@ export const [FoodProvider, useFood] = createContextHook(() => {
         }
       }
 
-      const totalImported = importedFood + importedActivities + importedWeight + importedBP + importedBG + importedFasting + importedMeds + importedMedLogs + importedAssessments;
+      const totalImported = importedFood + importedActivities + importedWeight + importedBP + importedBG + importedFasting + importedMeds + importedMedLogs;
       console.log('[FoodContext] Import complete. Total new records:', totalImported);
       if (totalImported > 0 || (sections['PROFILE'] && sections['PROFILE'].length > 1) || (sections['DAILY GOALS'] && sections['DAILY GOALS'].length > 1)) {
         markSyncPending();
@@ -1401,7 +1327,6 @@ export const [FoodProvider, useFood] = createContextHook(() => {
       if (importedFasting > 0) summary.push(`${importedFasting} fasting records`);
       if (importedMeds > 0) summary.push(`${importedMeds} medications`);
       if (importedMedLogs > 0) summary.push(`${importedMedLogs} medication logs`);
-      if (importedAssessments > 0) summary.push(`${importedAssessments} assessment records`);
 
       if (sections['PROFILE'] && sections['PROFILE'].length > 1) summary.push('profile');
       if (sections['DAILY GOALS'] && sections['DAILY GOALS'].length > 1) summary.push('daily goals');
