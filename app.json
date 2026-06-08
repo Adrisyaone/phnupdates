@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Public Health Updates",
+    "slug": "phnupdates",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "scheme": "phnupdates",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.publichealthnepalupdates.com"
+    },
+    "android": {
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.publichealthnepalupdates.com",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-font",
+      "expo-web-browser",
+      "react-native-ble-plx"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "examPreparation": {
+        "mcqSheetUrl": "",
+        "syllabusSheetUrl": "",
+        "geminiApiKey": "",
+        "geminiModel": "gemini-1.5-flash"
+      },
+      "eas": {
+        "projectId": "8629caf7-00cb-4d2d-a7fc-a39cd6705d1e"
+      }
+    },
+    "owner": "adrisya"
+  }
+}
