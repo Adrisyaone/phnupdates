@@ -1,7 +1,7 @@
 {
   "name": "app.publichealthnepalupdates.com",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
     "start": "npx rork start -p thsy5mpfz6ozfovq6tanx --lan",
     "start-local": "npx rork start -p thsy5mpfz6ozfovq6tanx --localhost",
