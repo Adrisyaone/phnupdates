@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { ImageStyle, StyleSheet, TextStyle, ViewStyle } from 'react-native';
+
+type NamedStyles<T> = { [P in keyof T]: ViewStyle | TextStyle | ImageStyle };
 
 export type ThemePreference = 'light' | 'dark';
 
@@ -69,9 +71,9 @@ const palettes: Record<ThemePreference, AppColors> = {
 
 let activeTheme: ThemePreference = 'light';
 
-const themedStyleCache = new WeakMap<Function, { theme: ThemePreference; styles: Record<string, any> }>();
+const themedStyleCache = new WeakMap<Function, { theme: ThemePreference; styles: unknown }>();
 
-const getCachedStyles = <T extends Record<string, any>>(factory: (palette: AppColors) => T): T => {
+const getCachedStyles = <T extends NamedStyles<T>>(factory: (palette: AppColors) => T): T => {
   const cached = themedStyleCache.get(factory);
 
   if (cached && cached.theme === activeTheme) {
@@ -95,13 +97,13 @@ export const colors: AppColors = new Proxy({} as AppColors, {
   },
 }) as AppColors;
 
-export const createThemedStyles = <T extends Record<string, any>>(factory: (palette: AppColors) => T): T => {
+export const createThemedStyles = <T extends NamedStyles<T>>(factory: (palette: AppColors) => T): T => {
   return new Proxy({} as T, {
     get(_target, prop: string | symbol) {
       return getCachedStyles(factory)[prop as keyof T];
     },
     ownKeys() {
-      return Reflect.ownKeys(getCachedStyles(factory));
+      return Reflect.ownKeys(getCachedStyles(factory) as object);
     },
     getOwnPropertyDescriptor() {
       return {

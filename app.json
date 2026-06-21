@@ -38,17 +38,30 @@
       "expo-notifications",
       "expo-font",
       "expo-web-browser",
-      "react-native-ble-plx"
+      "react-native-ble-plx",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "examPreparation": {
+        "gasUrl": "https://script.google.com/macros/s/AKfycbyJiwf3RgigdjdCmYKRTAuHuXh-4vk5Z1DUEmTpJotJxWS9Z6HMp6DN-4aO2r5fM46OuA/exec",
         "mcqSheetUrl": "",
         "syllabusSheetUrl": "",
+        "flashcardsGasUrl": "https://script.google.com/macros/s/AKfycbznTMKjo4pxcUDzpAd-j4h3Zcahyuzi0EnvFItRFV0I3_URsZ8ZpnyYzKIoEhcQ15c/exec",
         "geminiApiKey": "",
         "geminiModel": "gemini-1.5-flash"
+      },
+      "jobPortal": {
+        "jobPortalGasUrl": "https://script.google.com/macros/s/AKfycbwQWGGMwc_HYu0YbYBW9bvIHVAJcTtzz-Em1anwM-mFsG8098inivZ-Z9IPWOQS6q-y5A/exec"
       },
       "eas": {
         "projectId": "8629caf7-00cb-4d2d-a7fc-a39cd6705d1e"

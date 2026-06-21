@@ -122,6 +122,12 @@ export default function HomeLayout() {
           title: 'PDF Tools',
         }}
       />
+      <Stack.Screen
+        name="job-portal"
+        options={{
+          title: 'Job Portal',
+        }}
+      />
     </Stack>
   );
 }

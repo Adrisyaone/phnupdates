@@ -16,8 +16,11 @@ export default function ExamPreparationLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Exam Preparation' }} />
+      <Stack.Screen name="flashcards" options={{ title: 'Flashcards' }} />
       <Stack.Screen name="syllabus" options={{ title: 'Syllabus' }} />
       <Stack.Screen name="practice-mcqs" options={{ title: 'Practice MCQs' }} />
+      <Stack.Screen name="random-quiz" options={{ title: 'Random Quiz' }} />
+      <Stack.Screen name="ai-quiz" options={{ title: 'AI Quiz Generator' }} />
       <Stack.Screen name="tutor" options={{ title: 'AI Tutor' }} />
       <Stack.Screen name="progress" options={{ title: 'Progress' }} />
     </Stack>

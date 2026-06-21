@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { BookMarked, BookOpen, BriefcaseBusiness, Calculator, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Facebook, FileText, Globe, Info, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Shield, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
+import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Facebook, FileText, Globe, Info, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Shield, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { ALL_HEALTH_TIPS } from '@/mocks/healthTips';
@@ -23,6 +23,7 @@ import { PUBLIC_HEALTH_QUOTES } from '@/constants/publicHealthQuotes';
 import { useSettings } from '@/contexts/SettingsContext';
 import { getHealthTipDetails, HealthTipDetails } from '@/services/healthTipInfo';
 import { fetchPostsByLabels, BlogPost } from '@/services/bloggerApi';
+import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 
 const MONTH_LOCALE_MAP = {
   en: 'en-US',
@@ -135,6 +136,8 @@ export default function DashboardScreen() {
   const [isNewsLoading, setIsNewsLoading] = useState(true);
   const [latestOpportunities, setLatestOpportunities] = useState<BlogPost[]>([]);
   const [isOpportunitiesLoading, setIsOpportunitiesLoading] = useState(true);
+  const [latestJobs, setLatestJobs] = useState<JobPosting[]>([]);
+  const [isJobsLoading, setIsJobsLoading] = useState(true);
 
   useEffect(() => {
     const loadLatestNews = async () => {
@@ -170,8 +173,22 @@ export default function DashboardScreen() {
         setIsOpportunitiesLoading(false);
       }
     };
+    const loadLatestJobs = async () => {
+      try {
+        setIsJobsLoading(true);
+        const result = await loadJobPostings();
+        const active = result.jobs.filter((j) => !isDeadlinePassed(j.applicationDeadline));
+        setLatestJobs(active.slice(0, 5));
+      } catch (error) {
+        console.log('[Dashboard] Failed to load job postings:', error);
+        setLatestJobs([]);
+      } finally {
+        setIsJobsLoading(false);
+      }
+    };
     loadLatestNews();
     loadLatestOpportunities();
+    loadLatestJobs();
   }, []);
 
   const drawerWidth = Math.min(320, Dimensions.get('window').width * 0.82);
@@ -302,6 +319,14 @@ export default function DashboardScreen() {
   }, [router]);
 
   const homeMenuItems = [
+    {
+      key: 'job-portal',
+      title: 'Job Portal',
+      description: 'Browse job openings posted by organizations.',
+      color: '#7C3AED',
+      icon: Briefcase,
+      onPress: () => { router.push('/(tabs)/(home)/job-portal'); },
+    },
     {
       key: 'opportunities',
       title: 'Opportunities',
@@ -485,7 +510,7 @@ export default function DashboardScreen() {
     {
       title: 'Updates',
       subtitle: 'Latest posts and public health alerts.',
-      keys: ['opportunities', 'news', 'nagarik-awaz'],
+      keys: ['job-portal', 'opportunities', 'news', 'nagarik-awaz'],
     },
     {
       title: 'Learning & Resources',
@@ -631,6 +656,51 @@ export default function DashboardScreen() {
           ) : null}
 
 
+          {/* Job Portal Section */}
+          {featureSettings.jobPortalSection ? (
+          <View style={styles.newsSection}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.newsSectionTitle}>Job Portal</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  void updateFeatureSettings({ jobPortalSection: false });
+                }}
+              >
+                <Text style={styles.hideButtonText}>Hide</Text>
+              </TouchableOpacity>
+            </View>
+            {isJobsLoading ? (
+              <View style={styles.newsLoadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : latestJobs.length > 0 ? (
+              <>
+                {latestJobs.slice(0, 5).map((job) => {
+                  const deadline = formatDeadline(job.applicationDeadline);
+                  return (
+                    <TouchableOpacity
+                      key={job.id}
+                      style={styles.newsCard}
+                      onPress={() => { router.push('/(tabs)/(home)/job-portal'); }}
+                    >
+                      <View style={styles.newsCardContent}>
+                        <Text style={styles.newsCardTitle} numberOfLines={2}>{job.jobTitle}</Text>
+                        <Text style={styles.newsCardDate}>
+                          {[job.organization, job.jobType, deadline ? `Deadline: ${deadline}` : null].filter(Boolean).join(' · ')}
+                        </Text>
+                      </View>
+                      <ChevronRightCircle size={24} color="#7C3AED" />
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity style={styles.moreButton} onPress={() => router.push('/(tabs)/(home)/job-portal')}>
+                  <Text style={styles.moreButtonText}>View All Jobs</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </View>
+          ) : null}
+
           {/* New Opportunities Section with Hide/Unhide */}
           {featureSettings.opportunitiesSection ? (
           <View style={styles.newsSection}>
@@ -694,39 +764,58 @@ export default function DashboardScreen() {
 
           {featureSettings.publicHealthDaysCard ? (
           <View style={[styles.topCard, styles.publicHealthCard]}>
-            <View style={styles.publicHealthToggleRow}>
+            {/* Header row */}
+            <View style={styles.phdHeader}>
               <View style={styles.topCardTitleRow}>
-              <CalendarDays size={18} color={colors.primary} />
-              <Text style={styles.topCardTitle}>{`${copy.publicHealthDays} (${selectedMonthName})`}</Text>
+                <CalendarDays size={18} color={colors.primary} />
+                <Text style={styles.topCardTitle}>{copy.publicHealthDays}</Text>
+              </View>
+              <View style={styles.phdMonthPill}>
+                <Text style={styles.phdMonthPillText}>{selectedMonthName}</Text>
               </View>
             </View>
 
-            <Text style={styles.todayHeading}>{copy.today}</Text>
-            {todayDays.length > 0 ? (
-              todayDays.map((item) => (
-                <TouchableOpacity
-                  key={`bottom-today-${item.month}-${item.day}-${item.title}`}
-                  style={styles.topListItem}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/public-health-day',
-                      params: {
-                        month: String(item.month),
-                        day: String(item.day),
-                        title: item.title,
-                        type: item.type,
-                      },
-                    });
-                  }}
-                >
-                  <Text style={styles.topListTitle}>{`${item.month}/${item.day} - ${item.title}`}</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.emptyTopText}>{copy.noToday}</Text>
-            )}
+            {/* Today section */}
+            <View style={styles.phdSection}>
+              <View style={styles.phdTodayBadge}>
+                <Text style={styles.phdTodayBadgeText}>{copy.today.toUpperCase()}</Text>
+              </View>
+              {todayDays.length > 0 ? (
+                todayDays.map((item) => (
+                  <TouchableOpacity
+                    key={`today-${item.month}-${item.day}-${item.title}`}
+                    style={styles.phdTodayCard}
+                    activeOpacity={0.82}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/public-health-day',
+                        params: { month: String(item.month), day: String(item.day), title: item.title, type: item.type },
+                      });
+                    }}
+                  >
+                    <View style={styles.phdTodayDot} />
+                    <Text style={styles.phdTodayTitle} numberOfLines={2}>{item.title}</Text>
+                    {item.type === 'week' && (
+                      <View style={styles.phdWeekBadge}>
+                        <Text style={styles.phdWeekBadgeText}>Week</Text>
+                      </View>
+                    )}
+                    <ChevronRight size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.emptyTopText}>{copy.noToday}</Text>
+              )}
+            </View>
 
+            {/* Month list header */}
             <View style={styles.monthListHeaderRow}>
+              <Text style={styles.phdMonthListLabel}>
+                {`${copy.monthList}`}
+                {otherMonthDays.length > 0 ? (
+                  <Text style={styles.phdMonthListCount}>{`  ${otherMonthDays.length}`}</Text>
+                ) : null}
+              </Text>
               <TouchableOpacity
                 onPress={() => setIsMonthListExpanded((prev) => !prev)}
                 style={styles.showHideButton}
@@ -734,52 +823,64 @@ export default function DashboardScreen() {
                 <Text style={styles.showHideButtonText}>{isMonthListExpanded ? 'Hide' : 'Show'}</Text>
               </TouchableOpacity>
             </View>
-            {visibleOtherMonthDays.length > 0 ? (
-                visibleOtherMonthDays.map((item) => (
-                  <TouchableOpacity
-                    key={`bottom-month-${selectedMonthName}-${item.month}-${item.day}-${item.title}`}
-                    style={styles.topListItem}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/public-health-day',
-                        params: {
-                          month: String(item.month),
-                          day: String(item.day),
-                          title: item.title,
-                          type: item.type,
-                        },
-                      });
-                    }}
-                  >
-                    <Text style={styles.topListTitle}>{`${item.month}/${item.day} - ${item.title}`}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={styles.emptyTopText}>{copy.noMonthDays}</Text>
-              )}
 
-            <View style={styles.monthNavRow}>
+            {/* Month events */}
+            {visibleOtherMonthDays.length > 0 ? (
+              visibleOtherMonthDays.map((item) => (
+                <TouchableOpacity
+                  key={`month-${selectedMonthName}-${item.month}-${item.day}-${item.title}`}
+                  style={styles.phdEventRow}
+                  activeOpacity={0.82}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/public-health-day',
+                      params: { month: String(item.month), day: String(item.day), title: item.title, type: item.type },
+                    });
+                  }}
+                >
+                  <View style={styles.phdDateBox}>
+                    <Text style={styles.phdDateNum}>{item.day}</Text>
+                  </View>
+                  <Text style={styles.phdEventTitle} numberOfLines={2}>{item.title}</Text>
+                  {item.type === 'week' && (
+                    <View style={styles.phdWeekBadge}>
+                      <Text style={styles.phdWeekBadgeText}>Wk</Text>
+                    </View>
+                  )}
+                  <ChevronRight size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.emptyTopText}>{copy.noMonthDays}</Text>
+            )}
+
+            {/* Month navigation */}
+            <View style={styles.phdNavRow}>
               <TouchableOpacity
-                style={styles.monthNavButton}
-                onPress={() => {
-                  setMonthOffset((prev) => prev - 1);
-                }}
+                style={styles.phdNavButton}
+                onPress={() => setMonthOffset((prev) => prev - 1)}
               >
-                <ChevronLeft size={16} color={colors.text} />
+                <ChevronLeft size={15} color={colors.text} />
                 <Text style={styles.monthNavButtonText}>{copy.previous}</Text>
               </TouchableOpacity>
 
+              {monthOffset !== 0 ? (
+                <TouchableOpacity
+                  style={styles.phdNavTodayBtn}
+                  onPress={() => setMonthOffset(0)}
+                >
+                  <Text style={styles.phdNavTodayBtnText}>{copy.today}</Text>
+                </TouchableOpacity>
+              ) : <View style={styles.phdNavSpacer} />}
+
               <TouchableOpacity
-                style={styles.monthNavButton}
-                onPress={() => {
-                  setMonthOffset((prev) => prev + 1);
-                }}
+                style={styles.phdNavButton}
+                onPress={() => setMonthOffset((prev) => prev + 1)}
               >
                 <Text style={styles.monthNavButtonText}>{copy.next}</Text>
-                <ChevronRight size={16} color={colors.text} />
+                <ChevronRight size={15} color={colors.text} />
               </TouchableOpacity>
             </View>
-
           </View>
           ) : null}
 
@@ -1111,14 +1212,14 @@ const styles = createThemedStyles((colors) => ({
     marginTop: 2,
   },
   monthListHeaderRow: {
-    marginTop: 6,
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   showHideButton: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
@@ -1126,6 +1227,7 @@ const styles = createThemedStyles((colors) => ({
   },
   showHideButtonText: {
     color: colors.primaryDark,
+    fontSize: 12,
     fontWeight: '700',
   },
   topListItem: {
@@ -1185,6 +1287,153 @@ const styles = createThemedStyles((colors) => ({
     color: colors.text,
     fontSize: 12,
     fontWeight: '600',
+  },
+  // Public Health Days redesign
+  phdHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  phdMonthPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: colors.primary + '1A',
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  phdMonthPillText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  phdSection: {
+    gap: 6,
+    marginTop: 2,
+  },
+  phdTodayBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    backgroundColor: colors.primary,
+  },
+  phdTodayBadgeText: {
+    color: colors.surface,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  phdTodayCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary + '12',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: colors.primary + '35',
+  },
+  phdTodayDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    flexShrink: 0,
+  },
+  phdTodayTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  phdWeekBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: colors.primaryDark + '25',
+  },
+  phdWeekBadgeText: {
+    color: colors.primaryDark,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  phdMonthListLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  phdMonthListCount: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  phdEventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  phdDateBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  phdDateNum: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  phdEventTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  phdNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    gap: 8,
+  },
+  phdNavButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  phdNavTodayBtn: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.primary + '18',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  phdNavTodayBtnText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  phdNavSpacer: {
+    flex: 1,
   },
   menuGridSection: {
     paddingHorizontal: 16,

@@ -115,6 +115,7 @@ export interface FeatureSettings {
   publicHealthDaysCard: boolean;
   quoteCard: boolean;
   latestNewsSection: boolean;
+  jobPortalSection: boolean;
   opportunitiesSection: boolean;
   menuGridSection: boolean;
   imageSizePreset: 'square' | 'portrait' | 'landscape' | 'custom';
@@ -246,6 +247,7 @@ const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
   publicHealthDaysCard: true,
   quoteCard: true,
   latestNewsSection: true,
+  jobPortalSection: true,
   opportunitiesSection: true,
   menuGridSection: true,
   imageSizePreset: 'square',
@@ -569,25 +571,66 @@ const performScheduleAllNotifications = async (settings: NotificationSettings, l
       const dayTimes = settings.publicHealthDayReminderTimes?.length
         ? settings.publicHealthDayReminderTimes
         : DEFAULT_NOTIFICATION_SETTINGS.publicHealthDayReminderTimes;
-      const todayPublicHealthText = getTodayPublicHealthDaysText();
 
-      for (const reminderTime of dayTimes) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Today\'s Public Health Day',
-            body: todayPublicHealthText,
-            sound: 'default',
-            vibrate: [0, 200, 200, 200],
-            data: { type: 'public_health_day', route: '/(tabs)/(home)' },
-            ...(Platform.OS === 'android' ? { channelId: 'health-tips' } : {}),
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: reminderTime.hour,
-            minute: reminderTime.minute,
-          },
-        });
-        console.log(`[SettingsContext] Scheduled public health day reminder at ${reminderTime.hour}:${reminderTime.minute}`);
+      const schedNow = new Date();
+      const startOfToday = new Date(schedNow.getFullYear(), schedNow.getMonth(), schedNow.getDate());
+      const lookAheadMs = 90 * 24 * 60 * 60 * 1000;
+      const cutoffDate = new Date(schedNow.getTime() + lookAheadMs);
+
+      // Group titles by calendar date within the 90-day look-ahead window
+      const eventsByKey = new Map<string, { year: number; month: number; day: number; titles: string[] }>();
+      for (const healthDay of PUBLIC_HEALTH_DAYS) {
+        for (const yearOffset of [0, 1]) {
+          const year = schedNow.getFullYear() + yearOffset;
+          const eventDate = new Date(year, healthDay.month - 1, healthDay.day);
+          if (eventDate < startOfToday || eventDate > cutoffDate) continue;
+          const key = `${year}-${String(healthDay.month).padStart(2, '0')}-${String(healthDay.day).padStart(2, '0')}`;
+          if (!eventsByKey.has(key)) {
+            eventsByKey.set(key, { year, month: healthDay.month, day: healthDay.day, titles: [] });
+          }
+          eventsByKey.get(key)!.titles.push(healthDay.title);
+          break;
+        }
+      }
+
+      const sortedEvents = Array.from(eventsByKey.values()).sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        if (a.month !== b.month) return a.month - b.month;
+        return a.day - b.day;
+      });
+
+      const MAX_PHD_NOTIFICATIONS = 20;
+      let phdScheduled = 0;
+
+      for (const event of sortedEvents) {
+        if (phdScheduled >= MAX_PHD_NOTIFICATIONS) break;
+        const body = event.titles.length === 1
+          ? `Today: ${event.titles[0]}`
+          : `Today: ${event.titles.slice(0, 2).join(' | ')}${event.titles.length > 2 ? ` +${event.titles.length - 2} more` : ''}`;
+
+        for (const reminderTime of dayTimes) {
+          const triggerDate = new Date(event.year, event.month - 1, event.day, reminderTime.hour, reminderTime.minute, 0, 0);
+          if (triggerDate.getTime() <= schedNow.getTime()) continue;
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "Today's Public Health Day",
+              body,
+              sound: 'default',
+              vibrate: [0, 200, 200, 200],
+              data: { type: 'public_health_day', route: '/(tabs)/(home)' },
+              ...(Platform.OS === 'android' ? { channelId: 'health-tips' } : {}),
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: triggerDate,
+            },
+          });
+          phdScheduled++;
+          console.log(`[SettingsContext] Scheduled PHD "${body.substring(0, 40)}" on ${event.year}-${event.month}-${event.day} at ${reminderTime.hour}:${reminderTime.minute}`);
+        }
+      }
+      if (phdScheduled === 0) {
+        console.log('[SettingsContext] No upcoming public health days to schedule in next 90 days');
       }
     } else {
       console.log('[SettingsContext] Public health day reminder disabled');

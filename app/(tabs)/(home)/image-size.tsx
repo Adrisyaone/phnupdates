@@ -123,9 +123,17 @@ export default function ImageSizeScreen() {
 
       setResizedImageUri(resized.uri);
 
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status === 'granted') {
-        await MediaLibrary.saveToLibraryAsync(resized.uri);
+      let saved = false;
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          await MediaLibrary.saveToLibraryAsync(resized.uri);
+          saved = true;
+        }
+      } catch {
+        // Permission request unsupported on this build — fall through to sharing
+      }
+      if (saved) {
         setStatusMessage(`Saved to your photo library at ${currentLabel}.`);
       } else {
         setStatusMessage(`Resized to ${currentLabel}. Tap "Download" to save to your gallery.`);
@@ -146,9 +154,17 @@ export default function ImageSizeScreen() {
     }
 
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status === 'granted') {
-        await MediaLibrary.saveToLibraryAsync(resizedImageUri);
+      let savedToLibrary = false;
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          await MediaLibrary.saveToLibraryAsync(resizedImageUri);
+          savedToLibrary = true;
+        }
+      } catch {
+        // Permission request unsupported on this build — fall through to sharing
+      }
+      if (savedToLibrary) {
         setStatusMessage('Image saved to your photo library.');
         return;
       }
