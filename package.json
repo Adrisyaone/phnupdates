@@ -9,6 +9,7 @@
     "start-web": "npx rork start -p thsy5mpfz6ozfovq6tanx --web --lan",
     "start-web-tunnel": "npx rork start -p thsy5mpfz6ozfovq6tanx --web --tunnel",
     "start-web-dev": "cross-env DEBUG=expo* npx rork start -p thsy5mpfz6ozfovq6tanx --web --localhost",
+    "build:web": "expo export --platform web",
     "lint": "expo lint"
   },
   "dependencies": {
