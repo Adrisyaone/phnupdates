@@ -172,7 +172,7 @@ function NotificationNavigationHandler({ onReady }: NotificationNavigationHandle
           }
 
           if (actionId === 'LOG_FOOD' || actionId === 'VOICE_LOG_FOOD') {
-            navigateOrDefer('/add-food', 0);
+            navigateOrDefer('/(tabs)/(home)', 0);
             return;
           }
 
@@ -231,7 +231,7 @@ function NotificationNavigationHandler({ onReady }: NotificationNavigationHandle
               return;
             }
             if (actionId === 'LOG_FOOD' || actionId === 'VOICE_LOG_FOOD') {
-              pendingPostUnlockRoute = '/add-food';
+              pendingPostUnlockRoute = '/(tabs)/(home)';
               return;
             }
             // Health tip: dismiss from notification drawer and open app naturally.
@@ -303,7 +303,6 @@ function RootLayoutNav({ isNotificationNavigationReady }: RootLayoutNavProps) {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="add-food" options={{ presentation: "modal", title: "Add Food", headerStyle: { backgroundColor: colors.background }, headerShadowVisible: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="web-viewer" options={{ headerShown: false, presentation: "modal", gestureEnabled: true }} />
         <Stack.Screen name="about-us" options={{ title: 'About Us' }} />

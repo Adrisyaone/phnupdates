@@ -1,13 +1,12 @@
-# HealthyME
+# Public Health Updates (phnupdates)
 
-A comprehensive health and wellness management app built with React Native and Expo. HealthyME helps users track nutrition, medications, physical activity, fasting, weight, blood pressure, blood glucose, pulse, and more — all in one place.
+A comprehensive public health information and resource app built with React Native and Expo. The app supports public health professionals, students, and researchers with news, job opportunities, exam preparation, knowledge resources, and practical tools.
 
-**Version:** 1.1.0  
-**Platform:** Native iOS & Android app, exportable to web  
-**Bundle ID:** `app.healthyme.health`  
+**Version:** 2.0.0  
+**Platform:** Android, iOS, and Web (Expo)  
+**Bundle ID:** `app.publichealthnepalupdates.com`  
 **Framework:** Expo Router + React Native  
-
-**Funded by:** [PH-cares Changemakers Grant](https://www.memphis.edu/publichealth/initiatives/ph-cares-changemakers/about-phcc.php), School of Public Health, University of Memphis
+**Owner:** Adrisya (EAS project: `phnupdates`)
 
 ---
 
@@ -16,13 +15,9 @@ A comprehensive health and wellness management app built with React Native and E
 - [Overview](#overview)
 - [Features](#features)
 - [App Structure](#app-structure)
+- [Screens & Navigation](#screens--navigation)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
-- [Screens & Navigation](#screens--navigation)
-- [Data Management](#data-management)
-- [Integrations](#integrations)
-- [Security](#security)
-- [Localization](#localization)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
@@ -31,144 +26,84 @@ A comprehensive health and wellness management app built with React Native and E
 
 ## Overview
 
-HealthyME is a cross-platform mobile health companion designed for individuals managing non-communicable diseases (NCDs) such as diabetes, hypertension, heart disease, COPD, and more. The app provides personalized health tracking, AI-powered food and medication recognition, curated health content, validated health assessments, smart device integration, and actionable insights — all stored locally on-device for privacy.
+Public Health Updates is a mobile platform for the public health community. It aggregates blog posts, job listings, research tools, exam resources, and daily health awareness content in one app. Content is fetched live from the phnupdates Blogger site and a Google Apps Script-based job portal, with AI-powered exam tools powered by the Gemini API.
 
 ---
 
 ## Features
 
-### Dashboard
-- Daily health overview with calorie intake, calories burned, and net balance
-- Personalized daily calorie requirement based on profile (Mifflin-St Jeor & Harris-Benedict equations)
-- **Scoreboard** showing blood pressure, blood glucose, and pulse at a glance
-- Calorie intake vs. burned chart with 7-day history
-- BMI display with health category indicator
-- Macro nutrient breakdown (protein, carbs, fat) with progress bars
-- **Pulse chart** with trend visualization
-- Blood pressure chart, weight/BMI chart, blood glucose chart
-- Nutrient trends and calories burned charts
-- Fasting savings tracker (daily and total savings in selected currency)
-- Medication adherence overview
-- Assessment scores summary
-- Calendar history view
-- Quick-access health tips from curated content
-- **Quick links** at the bottom of dashboard: pulse measurement (camera-based, no record saved), smart devices shortcut
-- Tap-to-navigate: dashboard cards link directly to their respective detail pages
-- **Customizable widgets**: show/hide any dashboard chart or scoreboard from Settings
+### Home Dashboard
+- **Hero banner** with app branding and tagline
+- **Daily Health Tip** — rotating tip with AI-powered detailed guidance on tap
+- **Public Health Days Calendar** — today's awareness days + monthly list with navigation
+- **Quote of the Day** — daily rotating public health quote
+- **Latest News** — live-fetched recent public health news cards
+- **Job Portal Preview** — active job listings with deadlines
+- **New Opportunities** — recent vacancy, grant, scholarship, and call-for-paper posts
+- **Menu Grid** — icon grid for quick navigation to all app sections
+- **Side Drawer** — swipe-right or tap Menu for full navigation
 
-### Pulse Measurement (Quick Link)
-- Camera-based pulse measurement using flashlight and camera
-- Real-time pulse detection without saving records
-- Accessible from dashboard quick links section
-- Separate from pulse tracking in the Tracker page (which saves records)
+### News & Content
+- Public health news articles from [phnupdates.com](https://phnupdates.com)
+- Opportunities: vacancies, grants, scholarships, expression of interest, call for papers
+- Reports & Documents: international and national public health documents
+- Fact Sheets: scales, policies, and public health dashboard facts
+- Literature: stories, poems, and creative public health writing
+- Knowledge Hub: curated articles per category
 
-### Nutrition Tracking
-- Log food entries by meal type (breakfast, lunch, dinner, snack)
-- AI-powered calorie estimation from food photos using camera or gallery
-- Voice-based food entry via floating action button
-- Manual food entry with full macro details
-- Per-meal breakdown and daily totals
-- Editable entries with inline editing support
+### Job Portal
+- Live job listings from a Google Apps Script backend
+- Filter by organization, type, and deadline
+- Save interested jobs with deadline reminder notifications
+- Deadline tracking with visual indicators
 
-### Medication Management
-- Add medications manually or via AI image recognition (identifies name, dosage, unit, and category from photo)
-- Configurable frequency: daily, twice daily, three times daily, weekly, as needed
-- Customizable dose times with labels (morning, afternoon, evening, etc.)
-- Medication adherence tracking with taken/missed/skipped status
-- Refill reminders and supply tracking
-- Color-coded medications for quick visual identification
-- Medication categories: prescription, OTC, supplement, vitamin
+### Exam Preparation
+- **Syllabus** viewer for public health exams
+- **Practice MCQs** with answer reveal
+- **Random Quiz** mode
+- **AI Quiz** — AI-generated questions via Gemini API
+- **AI Tutor** — conversational exam help powered by Gemini
+- **Flashcards** for key concepts
+- **Progress** tracking across sessions
 
-### Activity Tracking
-- Log physical activities: walking, running, cycling, swimming, gym, sports, and more
-- Intensity levels: light, moderate, vigorous
-- MET-based calorie burn calculation personalized to user weight
-- Activity history with daily summaries
+### Books & References
+- Recommended public health books and references
 
-### Weight Tracking
-- Log weight entries over time
-- Automatic BMI calculation based on height from profile
-- Weight trend visualization
-
-### Blood Pressure Monitoring
-- Log systolic, diastolic, and pulse readings
-- Track blood pressure history and trends
-- Interactive line charts with touch-to-inspect data points
-
-### Blood Glucose Monitoring
-- Record blood glucose levels (fasting, random, post-prandial)
-- Support for mg/dL and mmol/L units
-- View glucose history and patterns
-
-### Intermittent Fasting
-- Preset fasting schedules: 12:12, 14:10, 16:8, 18:6, 20:4, OMAD, 36h, custom
-- Active fasting timer with start/stop controls
-- Fasting session history
-- Monetary savings calculator: configurable rate per hour of fasting
-- Customizable currency (USD, NPR, EUR, GBP, INR, etc.)
-- Persistent fasting notification on mobile devices
-- Net savings displayed on dashboard
-
-### Meal Planning
-- Daily meal planner with meal assignment
-- Diet recommendations and recipe suggestions
-- Activity planning section
-- Calorie-aware meal suggestions
+### Tools
+| Tool | Description |
+|---|---|
+| **Calorie Estimation** | AI-powered calorie estimation from food description, photo, or voice |
+| **BMI Calculator** | Calculate BMI from height and weight |
+| **Measurement Converter** | Convert between common health measurement units |
+| **Date Converter** | Convert between BS (Bikram Sambat) and AD dates |
+| **CamScanner** | Scan documents with the camera and export as PDF |
+| **PDF Converter** | Merge, split, compress PDF files |
+| **Image Size** | Resize images for form submissions and uploads |
 
 ### Knowledge Hub
-- Curated health articles from Blogger API (phnupdates.com)
-- YouTube video integration from @HealthyMe4u channel
-- Daily rotating health tips filtered by user's NCD conditions
-- Category-based content filtering
-- In-app browser for reading articles
+- Curated health articles from the Blogger API filtered by NCD conditions
+- In-app browser for reading full articles
+- Category tabs: blog posts, videos, health tips
 
-### Health Assessments (More Tab)
-- **PHQ-9** — Depression screening
-- **GAD-7** — Anxiety screening
-- **ASCVD Risk** — Cardiovascular risk assessment
-- **DSMQ** — Diabetes self-management questionnaire
-- **Framingham Risk Score** — Heart disease risk estimation
-- **AUDIT** — Alcohol use screening
-- **PSQI** — Sleep quality assessment
-- Score-based results with color-coded severity ranges and actionable descriptions
-- All tools reference validated clinical instruments
+### Keep Notes
+- Day-wise personal notes for researchers and professionals
 
-### Profile & Settings
-- User profile: name, age, gender, height, weight, activity level, profile photo
-- NCD condition selection (diabetes, hypertension, heart disease, COPD, asthma, kidney disease, etc.)
-- Customizable daily nutrition goals (calories, protein, carbs, fat)
-- **Dashboard widget visibility**: choose which charts and scoreboard cards to display
-- Notification settings: activity reminders, calorie alerts, evening reminders, health tip reminders
-- App lock with PIN and biometric authentication (Face ID / Touch ID)
-- Floating action button customization: choose which quick-entry tabs to show
-- Fasting savings rate and currency configuration
-- **Smart device management**: add, configure, sync, and remove connected devices
-- **Data import**: support for CSV, XLSX (parsed as CSV), and JSON file import
-- Data export (JSON) and clear all data options
-- Multi-language support
-- **Collapsible sections** with dropdown arrows for organized layout
-- **Logical section ordering**: Personal Info, Nutrition Goals, Dashboard Widgets, Notifications, Floating Button, Fasting Savings, Smart Devices, App Security, Language, Data Management, About
-- Time zone aware: all timestamps adapt to user's current time zone
+### Selected Blogs
+- Bookmarked / selected posts grouped by category
 
-### Smart Device Integration
-- Link smartwatches, blood pressure monitors, scales, and glucose meters
-- Configure which metrics each device syncs (pulse, blood pressure, weight, glucose)
-- Simulated sync pulls average daily measurements into the app
-- Device management: add, edit connection settings, remove devices
-- Quick access from dashboard quick links
+### Settings
+- Theme: Light / Dark mode
+- Language: English, Español, Nepali
+- Feature visibility: toggle individual home screen sections on/off
+- Notification reminders: health tips, quote of the day, public health day alerts, job deadline alerts
+- Customizable reminder times (morning / afternoon / evening / custom)
+- App update button linking to Play Store
 
-### Floating Action Button
-- Quick-entry floating button accessible from any tab
-- Supports voice input, camera-based entry, and manual forms
-- Configurable tabs: food, activity, weight, medication, blood pressure, blood glucose, fasting
-- Inline editing within floating tab pages for all entry types
-- AI-powered image recognition for food (calorie estimation) and medications (name/dosage/unit/category detection)
-
-### Onboarding
-- Step-by-step setup wizard on first launch
-- Collects profile info, NCD conditions, activity level
-- Optional app lock setup with PIN and biometrics
-- Personalized goal calculation based on profile
+### About Us
+- Profile of Bikram Adhikari (founder/author)
+- Publication list
+- Computer skills and competencies
+- Social links: Facebook page, Facebook group, Blog site
 
 ---
 
@@ -176,70 +111,103 @@ HealthyME is a cross-platform mobile health companion designed for individuals m
 
 ```
 app/
-  _layout.tsx                    # Root layout with providers
-  onboarding.tsx                 # First-launch onboarding wizard
-  add-food.tsx                   # Detailed food entry screen
-  +not-found.tsx                 # 404 screen
+  _layout.tsx                      # Root layout with notifications and theme providers
+  onboarding.tsx                   # First-launch onboarding
+  settings.tsx                     # Settings screen (theme, language, notifications, features)
+  about-us.tsx                     # About the author and app
+  privacy-policy.tsx               # Privacy policy
+  web-viewer.tsx                   # In-app browser modal
+  public-health-day.tsx            # AI-powered public health day detail screen
+  +not-found.tsx                   # 404 fallback screen
+  +native-intent.tsx               # Native intent redirect handler
   (tabs)/
-    _layout.tsx                  # Tab navigator (7 tabs with swipe support)
+    _layout.tsx                    # Tab stack layout
+    knowledge.tsx                  # Knowledge Hub (articles, videos, tips)
     (home)/
-      _layout.tsx                # Home stack layout
-      index.tsx                  # Dashboard screen
-    tracker/
-      _layout.tsx                # Tracker stack layout
-      index.tsx                  # Tracker hub (links to sub-trackers)
-      activities.tsx             # Activity logging & history
-      blood-glucose.tsx          # Blood glucose tracking
-      blood-pressure.tsx         # Blood pressure tracking
-      calories.tsx               # Calorie tracking details
-      fasting.tsx                # Intermittent fasting tracker
-      weight.tsx                 # Weight & BMI tracking
-    planner/
-      _layout.tsx                # Planner stack layout
-      index.tsx                  # Planner hub
-      activity-plan.tsx          # Activity planning
-      diet.tsx                   # Diet & meal planning
-    medications.tsx              # Medication management
-    knowledge.tsx                # Knowledge hub (articles, videos, tips)
-    more.tsx                     # Health assessments & tools
-    profile.tsx                  # Profile, settings, preferences, smart devices
-
-components/
-  AppLockScreen.tsx              # PIN / biometric lock screen
-  CalorieNotificationWatcher.tsx # Monitors calorie intake for alerts
-  FloatingVoiceButtons.tsx       # Floating action button with multi-tab quick entry
-  FoodCard.tsx                   # Food entry card component
-  InfoTooltip.tsx                # Tooltip component
-  InteractiveLineChart.tsx       # Touch-interactive SVG line chart with data point inspection
-  MacroBar.tsx                   # Macro nutrient progress bar
-  ProgressRing.tsx               # Circular progress indicator
-  WelcomeModal.tsx               # Welcome/intro modal
-
-contexts/
-  FoodContext.tsx                # Food, activity, weight entries, user profile, import/export
-  MealPlanContext.tsx            # Meal planning state management
-  MedicationContext.tsx          # Medication & adherence state management
-  SettingsContext.tsx            # Language, notifications, app lock, floating tabs, fasting savings, dashboard widgets, smart devices
+      _layout.tsx                  # Home stack with all sub-screen registrations
+      index.tsx                    # Dashboard (hero, news, jobs, menu grid, drawer)
+      category.tsx                 # Blog post category listing
+      jobs.tsx                     # Job/opportunity listings
+      job-portal.tsx               # Job portal (main portal view)
+      books.tsx                    # Books and references
+      calculator.tsx               # Calculator hub (links to sub-tools)
+      calorie-estimator.tsx        # AI calorie estimation tool
+      bmi-calculator.tsx           # BMI calculator
+      measurement-converter.tsx    # Unit conversion tool
+      date-converter.tsx           # BS/AD date converter
+      camscanner.tsx               # Camera-based document scanner
+      pdf-converter.tsx            # PDF merge/split/compress tool
+      pdf-tools.tsx                # PDF action screen (used by pdf-converter)
+      image-size.tsx               # Image resizing tool
+      keep-notes.tsx               # Personal note-keeping screen
+      selected-blogs.tsx           # Bookmarked posts screen
+      interested.tsx               # Saved/interested posts per menu
+      exam-preparation/
+        _layout.tsx                # Exam preparation stack layout
+        index.tsx                  # Exam prep hub
+        syllabus.tsx               # Syllabus viewer
+        practice-mcqs.tsx          # Practice multiple choice questions
+        random-quiz.tsx            # Random quiz mode
+        ai-quiz.tsx                # AI-generated quiz (Gemini)
+        tutor.tsx                  # AI tutor chat (Gemini)
+        flashcards.tsx             # Flashcard viewer
+        progress.tsx               # Progress tracker
+        settings.tsx               # Exam prep settings
 
 constants/
-  colors.ts                     # App color palette
-  config.ts                     # Default goals, profile, activity types & MET values
-  security.ts                   # PIN hashing, brute force protection, data validation, input sanitization
-  translations.ts               # Multi-language translations (EN, ES, NE)
+  colors.ts                        # Light/dark color palettes and themedStyles helper
+  blogMenus.ts                     # Dashboard menu definitions and theme colors
+  config.ts                        # App config (version, update URL, default goals)
+  publicHealthDays.ts              # Full list of public health awareness days
+  publicHealthQuotes.ts            # Curated public health quotes
+  translations.ts                  # Multi-language strings (EN, ES, NE)
+  security.ts                      # Input sanitization and validation utilities
 
 services/
-  bloggerApi.ts                 # Blogger API integration for health articles
-  calorieEstimation.ts          # AI-powered food calorie estimation
-  medicationImageRecognition.ts # AI-powered medication identification from images
-  youtubeApi.ts                 # YouTube API integration for health videos
+  bloggerApi.ts                    # Blogger API: fetch posts by label, extract images/excerpts
+  jobPortal.ts                     # Google Apps Script job portal API
+  publicHealthDayInfo.ts           # AI summary generator for public health days
+  healthTipInfo.ts                 # AI detailed health tip generator
+  interestedPosts.ts               # AsyncStorage for saved/interested posts
+  calorieEstimation.ts             # AI calorie estimator (text + image)
+  notificationQuickLogState.ts     # Notification access token state
+  appUpdate.ts                     # App version and update utilities
+  youtubeApi.ts                    # YouTube API for knowledge hub videos
+
+contexts/
+  SettingsContext.tsx              # Theme, language, notifications, feature flags, settings persistence
+  FoodContext.tsx                  # User profile and food tracking (used by calorie/BMI tools)
+
+components/
+  FloatingVoiceButtons.tsx         # Floating action button (voice, camera, manual entry)
+  AppLockScreen.tsx                # PIN / biometric lock screen
 
 mocks/
-  assessments.ts                # Clinical assessment questionnaires (PHQ-9, GAD-7, etc.)
-  healthTips.ts                 # Curated health tips by NCD category
-
-types/
-  food.ts                       # TypeScript interfaces for all data models
+  healthTips.ts                    # Curated health tips array
 ```
+
+---
+
+## Screens & Navigation
+
+The app uses a single-stack navigation rooted at `(tabs)`, accessed via the home drawer. There is no bottom tab bar — all navigation flows from the home screen drawer and grid menu.
+
+| Section | Route | Description |
+|---|---|---|
+| **Home** | `/(tabs)/(home)` | Dashboard with news, jobs, menu grid |
+| **Knowledge** | `/(tabs)/knowledge` | Articles, videos, tips by condition |
+| **Category** | `/(tabs)/(home)/category` | Blog posts by menu/submenu key |
+| **Jobs** | `/(tabs)/(home)/jobs` | Job and opportunity listings |
+| **Job Portal** | `/(tabs)/(home)/job-portal` | Full job portal |
+| **Books** | `/(tabs)/(home)/books` | Recommended books |
+| **Calculator** | `/(tabs)/(home)/calculator` | Tools hub |
+| **Exam Prep** | `/(tabs)/(home)/exam-preparation` | Exam prep suite |
+| **Keep Notes** | `/(tabs)/(home)/keep-notes` | Personal notes |
+| **Selected Blogs** | `/(tabs)/(home)/selected-blogs` | Saved posts |
+| **Settings** | `/settings` | App preferences |
+| **About Us** | `/about-us` | Author profile and links |
+| **Public Health Day** | `/public-health-day` | AI detail page for awareness days |
+| **Web Viewer** | `/web-viewer` | In-app browser (modal) |
 
 ---
 
@@ -249,27 +217,24 @@ types/
 |---|---|
 | **React Native 0.81** | Cross-platform mobile framework |
 | **Expo SDK 54** | Development platform and native APIs |
-| **Expo Router** | File-based navigation and routing |
+| **Expo Router 6** | File-based navigation |
 | **TypeScript** | Type-safe development |
-| **React Query** | Server state management |
-| **@nkzw/create-context-hook** | Context-based state management |
+| **React Query (TanStack)** | Async data fetching and caching |
+| **Zustand** | Lightweight state management |
 | **AsyncStorage** | Local data persistence |
-| **@rork-ai/toolkit-sdk** | AI-powered food & medication image recognition |
-| **Zod** | Schema validation for AI responses |
+| **Zod** | Schema validation for API responses |
+| **@rork-ai/toolkit-sdk** | AI image and voice processing |
 | **Lucide React Native** | Icon library |
 | **expo-image** | Optimized image rendering |
-| **expo-image-picker** | Camera and gallery access |
-| **expo-camera** | Camera-based pulse measurement |
-| **expo-av** | Audio recording for voice input |
-| **expo-haptics** | Haptic feedback |
-| **expo-notifications** | Local notifications and reminders |
-| **expo-local-authentication** | Biometric authentication (Face ID / Touch ID) |
-| **expo-linear-gradient** | Gradient backgrounds |
+| **expo-camera** | Document scanning (CamScanner) |
+| **expo-image-picker** | Gallery and camera access |
+| **expo-notifications** | Local notification reminders |
 | **expo-web-browser** | In-app browser for articles |
-| **expo-document-picker** | File import (CSV, JSON) |
-| **expo-file-system** | File reading for data import |
-| **expo-crypto** | Secure PIN hashing (SHA-256) |
-| **react-native-svg** | SVG rendering for interactive charts and progress rings |
+| **expo-document-picker** | File import for PDF tools |
+| **expo-file-system** | File reading and writing |
+| **expo-print** | PDF generation from scanned pages |
+| **react-native-web** | Web platform support |
+| **react-native-ble-plx** | Bluetooth (reserved for future device features) |
 
 ---
 
@@ -277,333 +242,132 @@ types/
 
 ### Prerequisites
 
-- [Node.js](https://github.com/nvm-sh/nvm) (v18+)
-- [Bun](https://bun.sh/docs/installation) package manager
+- [Node.js](https://nodejs.org) v18+
+- npm or [Bun](https://bun.sh)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <YOUR_GIT_URL>
-
-# Navigate to the project directory
-cd <YOUR_PROJECT_NAME>
+git clone https://github.com/Adrisyaone/phnupdates
 
 # Install dependencies
-bun install
+npm install
 
-# Start the development server
-bun run start
+# Start development server (LAN)
+npm run start
 
 # Start web preview
-bun run start-web
+npm run start-web
 ```
 
-### Running on Device
+### Run on Device
 
-1. **iOS:** Download [Expo Go](https://apps.apple.com/app/expo-go/id982107779) or the [Rork app](https://apps.apple.com/app/rork) from the App Store
-2. **Android:** Download [Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent) from Google Play
-3. Run `bun run start` and scan the QR code with your device
+1. Install **Expo Go** on iOS or Android
+2. Run `npm run start` and scan the QR code
 
-### Running in Browser
+### Build for Web (Netlify)
 
 ```bash
-bun run start-web
+npm run build:web
+# Output is in the /dist folder
+# Deploy via Netlify dashboard or CLI
 ```
-
-Note: The browser preview is great for quick testing, but some native features (biometrics, camera-based pulse, notifications, etc.) may not be available.
-
-### iOS Simulator / Android Emulator
-
-If you have Xcode (iOS) or Android Studio installed:
-
-```bash
-# iOS Simulator
-bun run start -- --ios
-
-# Android Emulator
-bun run start -- --android
-```
-
----
-
-## Screens & Navigation
-
-The app uses a **7-tab navigation** layout with swipe gesture support between tabs:
-
-| Tab | Icon | Description |
-|---|---|---|
-| **Dashboard** | Home | Health overview, scoreboard (BP, glucose, pulse), charts, calorie stats, fasting savings, quick links, tips |
-| **Tracker** | Activity | Hub for all health trackers (calories, weight, BP, glucose, fasting, activities) |
-| **Meds** | Pill | Medication management with adherence tracking |
-| **Planner** | CalendarDays | Meal planning and activity scheduling |
-| **Knowledge** | BookOpen | Health articles, videos, and daily tips |
-| **More** | ClipboardList | Health assessments and screening tools |
-| **Profile** | User | Profile settings, goals, dashboard widgets, notifications, smart devices, app lock, data management |
-
-### Additional Screens (outside tabs)
-
-- **Onboarding** — First-launch profile setup wizard
-- **Add Food** — Detailed food entry with AI estimation
-
----
-
-## Data Management
-
-All data is stored **locally on-device** using AsyncStorage. No server or cloud sync is required.
-
-### Storage Keys
-
-| Key | Data |
-|---|---|
-| `healthme_food_entries` | Food intake entries |
-| `healthme_goals` | Daily nutrition goals |
-| `healthme_profile` | User profile information |
-| `healthme_activities` | Activity/exercise entries |
-| `healthme_weight` | Weight history |
-| `healthme_onboarding_complete` | Onboarding completion flag |
-| `healthme_medications` | Medication list |
-| `healthme_medication_logs` | Medication adherence logs |
-| `healthme_language` | Selected language |
-| `healthme_notification_settings` | Notification preferences |
-| `healthme_app_lock_settings` | App lock configuration |
-| `healthme_floating_tabs` | Floating button tab preferences |
-| `healthme_fasting_savings` | Fasting savings rate and currency |
-| `healthme_dashboard_widgets` | Dashboard widget visibility settings |
-| `healthme_smart_devices` | Connected smart device configurations |
-| `healthme_donation_history` | Donation records |
-| `blood_pressure_entries` | Blood pressure & pulse readings |
-| `blood_glucose_entries` | Blood glucose readings |
-| `fasting_data` | Current fasting session data |
-| `fasting_history` | Completed fasting session history |
-| `health_assessment_results` | Assessment scores and history |
-
-### Data Import
-
-Users can import health data from external files:
-- **CSV** — Comma-separated values with header row
-- **XLSX** — Parsed as CSV (text-based extraction)
-- **JSON** — Direct JSON import of structured data
-
-All imported data is validated for format, size (max 50,000 entries / 50MB), and sanitized against potentially unsafe content (XSS, script injection).
-
-### Data Export & Reset
-
-Users can export all their health data as JSON from the Profile screen. A "Clear All Data" option is also available with confirmation prompt.
-
----
-
-## Integrations
-
-### AI-Powered Features
-
-- **Food Recognition:** Take a photo of food to automatically estimate calories and macros using AI image analysis via `@rork-ai/toolkit-sdk`
-- **Medication Recognition:** Photograph medication packaging to auto-detect name, dosage, unit, and category. Displays "Unable to find medicine details" for unrecognizable images.
-- **Voice Input:** Record voice descriptions of food, activities, or medications for quick logging
-
-### Smart Device Integration
-
-- Connect smartwatches, blood pressure monitors, digital scales, and glucose meters
-- Configure per-device sync settings (pulse, BP, weight, glucose)
-- Simulated Bluetooth sync pulls average daily measurements
-- Synced data is automatically saved to respective tracking records
-- Quick access to smart device settings from dashboard
-
-### Content APIs
-
-- **Blogger API:** Fetches health articles from [phnupdates.com](https://www.phnupdates.com) filtered by user's NCD conditions
-- **YouTube Data API:** Pulls health videos from the [@HealthyMe4u](https://youtube.com/@HealthyMe4u) YouTube channel
-
----
-
-## Security
-
-### PIN & Biometric Authentication
-- App lock with 4-digit PIN code
-- Optional biometric authentication (Face ID / Touch ID) via `expo-local-authentication`
-- PIN is hashed using SHA-256 (via `expo-crypto`) with salt before storage
-- Fallback hash implementation for environments without crypto support
-
-### Brute Force Protection
-- Maximum 5 failed PIN attempts before 30-second lockout
-- Extended 5-minute lockout after 10 failed attempts
-- Attempt counter resets on successful authentication
-
-### Data Validation & Sanitization
-- All imported data is validated for format and size limits
-- XSS and script injection detection in imported content
-- String sanitization removes potentially dangerous HTML/JS patterns
-- Sensitive data (PIN, passwords, tokens) redacted from logs
-
-### On-Device Storage
-- All health data stored locally via AsyncStorage
-- No cloud transmission of personal health information
-- API keys stored with basic obfuscation
-
----
-
-## Localization
-
-The app supports **3 languages**:
-
-| Language | Code | Native Label |
-|---|---|---|
-| English | `en` | English |
-| Spanish | `es` | Espanol |
-| Nepali | `ne` | Nepali |
-
-Language can be changed anytime from the Profile screen. All UI labels, headers, descriptions, dashboard widgets, charts, tracker pages, medication screens, and assessment tools are translated.
 
 ---
 
 ## Configuration
 
-### Default Nutrition Goals
+### app.json Key Settings
 
-| Nutrient | Default Target |
+| Field | Value |
 |---|---|
-| Calories | 2,000 kcal |
-| Protein | 150g |
-| Carbs | 250g |
-| Fat | 65g |
+| App name | `Public Health Updates` |
+| Slug | `phnupdates` |
+| Bundle ID | `app.publichealthnepalupdates.com` |
+| EAS Project | `8629caf7-00cb-4d2d-a7fc-a39cd6705d1e` |
+| Owner | `adrisya` |
 
-### Activity Types & MET Values
+### Environment Variables (`app.json` → `extra`)
 
-The app uses MET (Metabolic Equivalent of Task) values for accurate calorie burn calculation:
-
-| Activity | Light MET | Moderate MET | Vigorous MET |
-|---|---|---|---|
-| Walking | 3.0 | 4.3 | 5.0 |
-| Running | 6.0 | 9.8 | 11.5 |
-| Cycling | 4.0 | 6.8 | 10.0 |
-| Swimming | 4.5 | 7.0 | 10.0 |
-| Gym/Weights | 3.5 | 5.0 | 6.0 |
-| Sports | 4.5 | 6.5 | 8.0 |
-| Other | 3.0 | 5.0 | 7.0 |
-
-### Fasting Savings
-
-- Default rate: $1.00 per hour of fasting
-- Configurable currency and rate from Profile screen
-- Supported currencies: USD, NPR, EUR, GBP, INR, JPY, AUD, CAD, CHF, CNY, KRW, BRL, MXN, SGD, NZD, THB, PHP, IDR, ZAR, AED, SAR
-
-### Dashboard Widgets
-
-All dashboard sections can be individually shown or hidden from Profile > Dashboard Widgets:
-
-| Widget | Default |
+| Key | Purpose |
 |---|---|
-| Health Alerts | Shown |
-| BP & Glucose Scoreboard | Shown |
-| Weight & Height Cards | Shown |
-| BMI Card | Shown |
-| Blood Pressure Chart | Shown |
-| Pulse Chart | Shown |
-| Weight/BMI Chart | Shown |
-| Blood Glucose Chart | Shown |
-| Daily Calorie Requirement | Shown |
-| Today Summary | Shown |
-| Calorie Intake Chart | Shown |
-| Nutrient Trends | Shown |
-| Calories Burned Chart | Shown |
-| Fasting Tracker | Shown |
-| Medication Adherence | Shown |
-| Assessment Scores | Shown |
-| Calendar History | Shown |
+| `examPreparation.gasUrl` | Google Apps Script for MCQ data |
+| `examPreparation.flashcardsGasUrl` | Google Apps Script for flashcard data |
+| `examPreparation.geminiApiKey` | Gemini API key for AI quiz/tutor |
+| `examPreparation.geminiModel` | Gemini model name (default: `gemini-1.5-flash`) |
+| `jobPortal.jobPortalGasUrl` | Google Apps Script for job listings |
 
-### Supported NCD Conditions
+### Supported Languages
 
-Diabetes, Hypertension, Heart Disease, COPD, Asthma, Kidney Disease, Liver Disease, Thyroid Disorder, Cancer, Stroke, Arthritis, Depression, Anxiety, Obesity, Other
-
-### Smart Device Types
-
-| Type | Sync Capabilities |
+| Language | Code |
 |---|---|
-| Smartwatch | Pulse, Blood Pressure |
-| BP Monitor | Blood Pressure, Pulse |
-| Scale | Weight |
-| Glucose Meter | Blood Glucose |
-| Other | Configurable |
+| English | `en` |
+| Español | `es` |
+| Nepali | `ne` |
 
 ---
 
 ## Deployment
 
-### Publish to App Store (iOS)
+### Android (Google Play)
 
 ```bash
-bun i -g @expo/eas-cli
-eas build:configure
-eas build --platform ios
-eas submit --platform ios
-```
-
-For detailed instructions, visit [Expo's App Store deployment guide](https://docs.expo.dev/submit/ios/).
-
-### Publish to Google Play (Android)
-
-```bash
+npm install -g eas-cli
 eas build --platform android
 eas submit --platform android
 ```
 
-For detailed instructions, visit [Expo's Google Play deployment guide](https://docs.expo.dev/submit/android/).
-
-### Publish as a Website
+### iOS (App Store)
 
 ```bash
-eas build --platform web
-eas hosting:configure
-eas hosting:deploy
+eas build --platform ios
+eas submit --platform ios
 ```
 
-Alternative web deployment options: **Vercel**, **Netlify**
+### Web (Netlify)
+
+The repo includes a `netlify.toml` configured for web builds:
+
+```toml
+[build]
+  command = "npm run build:web"
+  publish = "dist"
+```
+
+1. Push the repo to GitHub
+2. Connect to Netlify and import the project
+3. Netlify auto-reads `netlify.toml` — no extra config needed
+4. Deploy → live at `https://your-site.netlify.app`
 
 ---
 
 ## Troubleshooting
 
 ### App not loading on device?
-1. Ensure your phone and computer are on the same WiFi network
-2. Try tunnel mode: `bun start -- --tunnel`
-3. Check firewall settings
+- Ensure phone and computer are on the same Wi-Fi network
+- Try tunnel mode: `npm run start-tunnel`
 
-### Build failing?
-1. Clear cache: `bunx expo start --clear`
-2. Reinstall dependencies: `rm -rf node_modules && bun install`
-3. See [Expo Troubleshooting](https://docs.expo.dev/troubleshooting/build-errors/)
+### Build failing on Netlify?
+- Verify the **Base directory** in Netlify dashboard is empty (not `phnupdates`)
+- The project root is the build root — `netlify.toml` handles the rest
 
-### Biometric authentication not working?
-- Biometric auth requires a physical device with Face ID / Touch ID
-- Not available in web preview or simulators without biometric support
-- Falls back to PIN code when biometrics are unavailable
+### AI features not working?
+- Check that `geminiApiKey` is set in `app.json → extra.examPreparation`
+- AI quiz, tutor, health tip details, and public health day summaries all require a valid Gemini API key
 
-### Camera-based pulse measurement not working?
-- Requires a physical device with camera and flashlight
-- Not available in web preview
-- Ensure camera permissions are granted
-- Place finger firmly over the camera lens and flashlight
+### Job portal not loading?
+- Verify `jobPortalGasUrl` in `app.json → extra.jobPortal` points to a deployed Google Apps Script web app
+- The GAS endpoint must be deployed as "Execute as: Me" and "Who has access: Anyone"
 
-### AI image recognition returning errors?
-- Ensure the image is clear and well-lit
-- For medications, photograph the label/packaging directly
-- For food, capture the entire plate/dish
-- If recognition fails, the app displays "Unable to find details" and allows manual entry
+### Notifications not working?
+- Grant notification permissions when prompted
+- On Android, ensure battery optimization is not blocking background notifications
+- Notifications require a physical device (not web preview)
 
-### Smart device sync not working?
-- Smart device integration uses simulated Bluetooth sync
-- Ensure the device is added and configured in Profile > Smart Devices
-- Check that desired metrics (pulse, BP, weight, glucose) are enabled for the device
-
-### Data import failing?
-- Supported formats: CSV (with header row), JSON (structured arrays/objects)
-- Maximum 50,000 entries per import
-- Maximum file size: 50MB
-- Files must not contain potentially unsafe HTML/JavaScript content
-
-### Need help with native features?
-- Check [Expo's documentation](https://docs.expo.dev/) for native APIs
-- Browse [React Native's documentation](https://reactnative.dev/docs/getting-started) for core components
+### CamScanner / PDF tools not available on web?
+- These features require native camera and file system access
+- Use the Android or iOS app for document scanning and PDF tools
 
 ---
 
@@ -611,6 +375,9 @@ Alternative web deployment options: **Vercel**, **Netlify**
 
 This project is private and proprietary.
 
-## Built With
+## Contact
 
-Built with [Rork](https://rork.com) — AI-powered native mobile app builder using React Native and Expo.
+- **Website:** [phnupdates.com](https://phnupdates.com)
+- **Facebook:** [facebook.com/phnupdates](https://www.facebook.com/phnupdates)
+- **WhatsApp/Viber:** +977-9849746375
+- **Blog:** [phnupdates.blogspot.com](https://phnupdates.blogspot.com)

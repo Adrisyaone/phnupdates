@@ -1,8 +1,8 @@
 import React from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Languages, Palette, Bell, SlidersHorizontal, ArrowUpCircle } from 'lucide-react-native';
+import { ArrowUpCircle, Bell, ChevronRight, Info, Languages, LayoutGrid, Moon, Palette, Shield, Sun } from 'lucide-react-native';
 import { colors, createThemedStyles, ThemePreference } from '@/constants/colors';
 import { LANGUAGES, Language } from '@/constants/translations';
 import { NotificationMode, useSettings } from '@/contexts/SettingsContext';
@@ -28,28 +28,22 @@ export default function SettingsScreen() {
   const openPlayStore = async () => {
     const packageName = APP_UPDATE_CONFIG.androidPackage;
     const marketUrl = `market://details?id=${packageName}`;
-
     try {
       if (Platform.OS === 'android' && await Linking.canOpenURL(marketUrl)) {
         await Linking.openURL(marketUrl);
         return;
       }
-
       await Linking.openURL(`https://play.google.com/store/apps/details?id=${packageName}&pcampaignid=web_share`);
-    } catch (error) {
-      console.log('[Settings] Failed to open Play Store:', error);
+    } catch {
       Alert.alert('Unable to open store', 'Please open the Play Store manually to update the app.');
     }
   };
 
   const openOtherApp = async () => {
-    const appUrl = 'https://play.google.com/store/apps/details?id=app.healtyme.com';
-
     try {
-      await Linking.openURL(appUrl);
-    } catch (error) {
-      console.log('[Settings] Failed to open other app link:', error);
-      Alert.alert('Unable to open link', 'Please open the Play Store manually to view our other app.');
+      await Linking.openURL('https://play.google.com/store/apps/details?id=app.healtyme.com');
+    } catch {
+      Alert.alert('Unable to open link', 'Please open the Play Store manually.');
     }
   };
 
@@ -71,9 +65,7 @@ export default function SettingsScreen() {
   ) => {
     const hour = ((nextHour % 24) + 24) % 24;
     const minute = ((nextMinute % 60) + 60) % 60;
-    await updateNotificationSettings({
-      [key]: [{ id: '1', hour, minute }],
-    } as any);
+    await updateNotificationSettings({ [key]: [{ id: '1', hour, minute }] } as any);
   };
 
   const renderTimeEditor = (
@@ -83,419 +75,439 @@ export default function SettingsScreen() {
     fallbackMinute: number,
   ) => {
     const time = notificationSettings[key]?.[0] ?? { id: '1', hour: fallbackHour, minute: fallbackMinute };
+    const presets = [
+      { label: 'Morning', h: 7, m: 0 },
+      { label: 'Afternoon', h: 13, m: 0 },
+      { label: 'Evening', h: 18, m: 0 },
+    ];
 
     return (
-      <View style={styles.timeEditorCard}>
-        <Text style={styles.timeEditorLabel}>{label}</Text>
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-          {[
-            { label: 'Morning', h: 7, m: 0 },
-            { label: 'Afternoon', h: 13, m: 0 },
-            { label: 'Evening', h: 18, m: 0 },
-            { label: 'Custom', h: time.hour, m: time.minute },
-          ].map((p) => {
-            const active = p.h === time.hour && p.m === time.minute && p.label !== 'Custom';
+      <View style={styles.timeBlock}>
+        <Text style={styles.timeBlockLabel}>{label}</Text>
+        <View style={styles.presetRow}>
+          {presets.map((p) => {
+            const active = p.h === time.hour && p.m === time.minute;
             return (
               <TouchableOpacity
                 key={p.label}
-                style={[styles.chip, active && styles.chipActive]}
+                style={[styles.presetChip, active && styles.presetChipActive]}
                 onPress={() => { void updateSingleTime(key, p.h, p.m); }}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{p.label}</Text>
+                <Text style={[styles.presetChipText, active && styles.presetChipTextActive]}>{p.label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-        <View style={styles.timeEditorRow}>
-          <TouchableOpacity
-            style={styles.timeAdjustBtn}
-            onPress={() => { void updateSingleTime(key, time.hour - 1, time.minute); }}
-          >
-            <Text style={styles.timeAdjustBtnText}>-H</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.timeAdjustBtn}
-            onPress={() => { void updateSingleTime(key, time.hour + 1, time.minute); }}
-          >
-            <Text style={styles.timeAdjustBtnText}>+H</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.timeAdjustBtn}
-            onPress={() => { void updateSingleTime(key, time.hour, time.minute - 5); }}
-          >
-            <Text style={styles.timeAdjustBtnText}>-5m</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.timeAdjustBtn}
-            onPress={() => { void updateSingleTime(key, time.hour, time.minute + 5); }}
-          >
-            <Text style={styles.timeAdjustBtnText}>+5m</Text>
-          </TouchableOpacity>
+        <View style={styles.timeAdjustRow}>
+          <View style={styles.timeDisplay}>
+            <Text style={styles.timeDisplayValue}>
+              {`${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`}
+            </Text>
+          </View>
+          <View style={styles.adjustBtnGroup}>
+            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour - 1, time.minute); }}>
+              <Text style={styles.adjustBtnText}>−H</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour + 1, time.minute); }}>
+              <Text style={styles.adjustBtnText}>+H</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute - 5); }}>
+              <Text style={styles.adjustBtnText}>−5m</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute + 5); }}>
+              <Text style={styles.adjustBtnText}>+5m</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <Text style={styles.timeEditorValue}>{`${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`}</Text>
       </View>
     );
   };
 
+  const renderSwitch = (label: string, description: string, value: boolean, onValueChange: (v: boolean) => void) => (
+    <View style={styles.switchRow}>
+      <View style={styles.switchLabelGroup}>
+        <Text style={styles.switchLabel}>{label}</Text>
+        {description ? <Text style={styles.switchDesc}>{description}</Text> : null}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.border, true: colors.primary + '70' }}
+        thumbColor={value ? colors.primary : colors.surfaceAlt}
+      />
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Appearance */}
+        <View style={styles.sectionHeader}>
+          <Palette size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Appearance</Text>
+        </View>
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Palette size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>{t('theme')}</Text>
-          </View>
-          <View style={styles.optionRow}>
+          <Text style={styles.fieldLabel}>Theme</Text>
+          <View style={styles.themeRow}>
             {(['light', 'dark'] as ThemePreference[]).map((option) => {
               const active = theme === option;
+              const Icon = option === 'light' ? Sun : Moon;
               return (
                 <TouchableOpacity
                   key={option}
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => {
-                    void setTheme(option);
-                  }}
+                  style={[styles.themeCard, active && styles.themeCardActive]}
+                  onPress={() => { void setTheme(option); }}
                 >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{option === 'light' ? t('light') : t('dark')}</Text>
+                  <Icon size={22} color={active ? colors.primary : colors.textSecondary} />
+                  <Text style={[styles.themeLabel, active && styles.themeLabelActive]}>
+                    {option === 'light' ? t('light') : t('dark')}
+                  </Text>
+                  {active ? <View style={styles.themeActiveDot} /> : null}
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
+        {/* Language */}
+        <View style={styles.sectionHeader}>
+          <Languages size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>{t('language')}</Text>
+        </View>
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Languages size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>{t('language')}</Text>
-          </View>
-          <View style={styles.optionRow}>
+          <View style={styles.langRow}>
             {LANGUAGES.map((lang) => {
               const active = language === lang.key;
               return (
                 <TouchableOpacity
                   key={lang.key}
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => {
-                    void setLanguage(lang.key as Language);
-                  }}
+                  style={[styles.langChip, active && styles.langChipActive]}
+                  onPress={() => { void setLanguage(lang.key as Language); }}
                 >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{lang.label}</Text>
+                  <Text style={[styles.langText, active && styles.langTextActive]}>{lang.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
+        {/* Feature Visibility */}
+        <View style={styles.sectionHeader}>
+          <LayoutGrid size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Feature Visibility</Text>
+        </View>
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <SlidersHorizontal size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>Feature Visibility</Text>
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Health Tips Card</Text>
-            <Switch
-              value={featureSettings.healthTipsCard}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ healthTipsCard: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.healthTipsCard ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Public Health Days Card</Text>
-            <Switch
-              value={featureSettings.publicHealthDaysCard}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ publicHealthDaysCard: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.publicHealthDaysCard ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Public Health Quote Card</Text>
-            <Switch
-              value={featureSettings.quoteCard}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ quoteCard: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.quoteCard ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Latest News Section</Text>
-            <Switch
-              value={featureSettings.latestNewsSection}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ latestNewsSection: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.latestNewsSection ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Opportunities Section</Text>
-            <Switch
-              value={featureSettings.opportunitiesSection}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ opportunitiesSection: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.opportunitiesSection ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Menu Grid Section</Text>
-            <Switch
-              value={featureSettings.menuGridSection}
-              onValueChange={(enabled) => {
-                void updateFeatureSettings({ menuGridSection: enabled });
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={featureSettings.menuGridSection ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
+          {renderSwitch('Health Tips Card', 'Daily rotating public health tips on home screen', featureSettings.healthTipsCard, (enabled) => { void updateFeatureSettings({ healthTipsCard: enabled }); })}
+          {renderSwitch('Public Health Days Card', 'Awareness days and weeks calendar', featureSettings.publicHealthDaysCard, (enabled) => { void updateFeatureSettings({ publicHealthDaysCard: enabled }); })}
+          {renderSwitch('Quote of the Day Card', 'Daily public health inspiration quote', featureSettings.quoteCard, (enabled) => { void updateFeatureSettings({ quoteCard: enabled }); })}
+          {renderSwitch('Latest News Section', 'Recent public health news on home screen', featureSettings.latestNewsSection, (enabled) => { void updateFeatureSettings({ latestNewsSection: enabled }); })}
+          {renderSwitch('Opportunities Section', 'Jobs, grants and vacancy listings', featureSettings.opportunitiesSection, (enabled) => { void updateFeatureSettings({ opportunitiesSection: enabled }); })}
+          {renderSwitch('Job Portal Section', 'Job openings from organizations', featureSettings.jobPortalSection, (enabled) => { void updateFeatureSettings({ jobPortalSection: enabled }); })}
+          {renderSwitch('Menu Grid Section', 'Icon grid for quick navigation to all features', featureSettings.menuGridSection, (enabled) => { void updateFeatureSettings({ menuGridSection: enabled }); })}
         </View>
 
+        {/* Notifications */}
+        <View style={styles.sectionHeader}>
+          <Bell size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>{t('notifications')}</Text>
+        </View>
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Bell size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>{t('notifications')}</Text>
-          </View>
+          {renderSwitch(t('healthTipReminder'), 'Get a daily health tip notification', notificationSettings.healthTipReminderEnabled, (enabled) => {
+            void (async () => {
+              if (!(await ensurePermissionIfEnabling(enabled))) return;
+              await updateNotificationSettings({ healthTipReminderEnabled: enabled });
+            })();
+          })}
+          {notificationSettings.healthTipReminderEnabled ? renderTimeEditor('Health Tips Time', 'healthTipReminderTimes', 7, 0) : null}
 
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>{t('healthTipReminder')}</Text>
-            <Switch
-              value={notificationSettings.healthTipReminderEnabled}
-              onValueChange={(enabled) => {
-                void (async () => {
-                  if (!(await ensurePermissionIfEnabling(enabled))) return;
-                  await updateNotificationSettings({ healthTipReminderEnabled: enabled });
-                })();
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={notificationSettings.healthTipReminderEnabled ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-          {renderTimeEditor('Health Tips Time', 'healthTipReminderTimes', 7, 0)}
+          {renderSwitch("Today's Quote", 'Daily inspirational public health quote', notificationSettings.quoteReminderEnabled, (enabled) => {
+            void (async () => {
+              if (!(await ensurePermissionIfEnabling(enabled))) return;
+              await updateNotificationSettings({ quoteReminderEnabled: enabled });
+            })();
+          })}
+          {notificationSettings.quoteReminderEnabled ? renderTimeEditor('Quote Reminder Time', 'quoteReminderTimes', 8, 0) : null}
 
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Today&apos;s Quote Reminder</Text>
-            <Switch
-              value={notificationSettings.quoteReminderEnabled}
-              onValueChange={(enabled) => {
-                void (async () => {
-                  if (!(await ensurePermissionIfEnabling(enabled))) return;
-                  await updateNotificationSettings({ quoteReminderEnabled: enabled });
-                })();
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={notificationSettings.quoteReminderEnabled ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-          {renderTimeEditor('Quote Reminder Time', 'quoteReminderTimes', 8, 0)}
+          {renderSwitch("Public Health Day Alert", 'Be reminded of awareness days each morning', notificationSettings.publicHealthDayReminderEnabled, (enabled) => {
+            void (async () => {
+              if (!(await ensurePermissionIfEnabling(enabled))) return;
+              await updateNotificationSettings({ publicHealthDayReminderEnabled: enabled });
+            })();
+          })}
+          {notificationSettings.publicHealthDayReminderEnabled ? renderTimeEditor('Public Health Day Time', 'publicHealthDayReminderTimes', 8, 30) : null}
 
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Today&apos;s Public Health Day Reminder</Text>
-            <Switch
-              value={notificationSettings.publicHealthDayReminderEnabled}
-              onValueChange={(enabled) => {
-                void (async () => {
-                  if (!(await ensurePermissionIfEnabling(enabled))) return;
-                  await updateNotificationSettings({ publicHealthDayReminderEnabled: enabled });
-                })();
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={notificationSettings.publicHealthDayReminderEnabled ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-          {renderTimeEditor('Public Health Day Time', 'publicHealthDayReminderTimes', 8, 30)}
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Interested Jobs Apply Reminder</Text>
-            <Switch
-              value={notificationSettings.interestedJobsReminderEnabled}
-              onValueChange={(enabled) => {
-                void (async () => {
-                  if (!(await ensurePermissionIfEnabling(enabled))) return;
-                  await updateNotificationSettings({ interestedJobsReminderEnabled: enabled });
-                })();
-              }}
-              trackColor={{ false: colors.border, true: colors.primary + '66' }}
-              thumbColor={notificationSettings.interestedJobsReminderEnabled ? colors.primary : colors.surfaceAlt}
-            />
-          </View>
-          {renderTimeEditor('Interested Jobs Time', 'interestedJobsReminderTimes', 9, 0)}
+          {renderSwitch('Interested Jobs Reminder', 'Reminder to apply for saved job postings', notificationSettings.interestedJobsReminderEnabled, (enabled) => {
+            void (async () => {
+              if (!(await ensurePermissionIfEnabling(enabled))) return;
+              await updateNotificationSettings({ interestedJobsReminderEnabled: enabled });
+            })();
+          })}
+          {notificationSettings.interestedJobsReminderEnabled ? renderTimeEditor('Interested Jobs Time', 'interestedJobsReminderTimes', 9, 0) : null}
 
           <Text style={styles.fieldLabel}>{t('notificationMode')}</Text>
-          <View style={styles.optionRow}>
+          <View style={styles.modeRow}>
             {(['sound', 'vibration', 'both'] as NotificationMode[]).map((mode) => {
               const active = notificationSettings.notificationMode === mode;
               return (
                 <TouchableOpacity
                   key={mode}
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => {
-                    void updateNotificationSettings({ notificationMode: mode });
-                  }}
+                  style={[styles.modeChip, active && styles.modeChipActive]}
+                  onPress={() => { void updateNotificationSettings({ notificationMode: mode }); }}
                 >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{mode}</Text>
+                  <Text style={[styles.modeChipText, active && styles.modeChipTextActive]}>{mode}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
+        {/* App Update */}
+        <View style={styles.sectionHeader}>
+          <ArrowUpCircle size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>App Update</Text>
+        </View>
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <ArrowUpCircle size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>App Update</Text>
+          <View style={styles.updateMetaRow}>
+            <Text style={styles.updateLabel}>Installed version</Text>
+            <View style={styles.versionBadge}>
+              <Text style={styles.versionBadgeText}>{currentVersion}</Text>
+            </View>
           </View>
+          <TouchableOpacity style={styles.updateBtn} onPress={() => { void openPlayStore(); }}>
+            <ArrowUpCircle size={16} color="#fff" />
+            <Text style={styles.updateBtnText}>Update on Play Store</Text>
+          </TouchableOpacity>
+        </View>
 
-          <Text style={styles.updateMeta}>Installed version: {currentVersion}</Text>
-          <Text style={styles.updateMessage}>Tap Update Now to open the Play Store.</Text>
-
-          <View style={styles.updateActions}>
+        {/* More */}
+        <View style={styles.sectionHeader}>
+          <Info size={15} color={colors.primary} />
+          <Text style={styles.sectionTitle}>More</Text>
+        </View>
+        <View style={styles.card}>
+          {[
+            { label: 'About Us', onPress: () => { router.push('/about-us'); } },
+            { label: 'Privacy Policy', onPress: () => { router.push('/privacy-policy'); } },
+            { label: 'Our Other App (HealthyME)', onPress: () => { void openOtherApp(); } },
+          ].map((item, i, arr) => (
             <TouchableOpacity
-              style={styles.moreButton}
-              onPress={() => {
-                void openPlayStore();
-              }}
+              key={item.label}
+              style={[styles.moreLink, i < arr.length - 1 && styles.moreLinkBorder]}
+              onPress={item.onPress}
             >
-              <View style={styles.buttonInline}>
-                <ArrowUpCircle size={16} color={colors.text} />
-                <Text style={styles.moreButtonText}>Update Now</Text>
-              </View>
+              <Text style={styles.moreLinkText}>{item.label}</Text>
+              <ChevronRight size={16} color={colors.textLight} />
             </TouchableOpacity>
-          </View>
+          ))}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>More</Text>
-          </View>
-          <View style={styles.moreRow}>
-            <TouchableOpacity style={styles.moreButton} onPress={() => { router.push('/about-us'); }}>
-              <Text style={styles.moreButtonText}>About Us</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.moreButton} onPress={() => { router.push('/privacy-policy'); }}>
-              <Text style={styles.moreButtonText}>Privacy Policy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.moreButton} onPress={() => { void openOtherApp(); }}>
-              <Text style={styles.moreButtonText}>Our other app</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = createThemedStyles((colors) => StyleSheet.create({
+const styles = createThemedStyles((colors) => ({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
     padding: 16,
-    gap: 12,
-    paddingBottom: 26,
+    gap: 8,
+    paddingBottom: 32,
   },
+
+  // Section headers
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 2,
+    paddingLeft: 2,
+  },
+  sectionTitle: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     gap: 10,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    minHeight: 34,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '18',
-  },
-  chipText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  chipTextActive: {
-    color: colors.primaryDark,
   },
   fieldLabel: {
     color: colors.text,
     fontSize: 13,
     fontWeight: '600',
+    marginBottom: 2,
   },
-  switchRow: {
+
+  // Theme selector
+  themeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  themeCard: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingVertical: 16,
+    backgroundColor: colors.background,
+    position: 'relative',
+  },
+  themeCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '0E',
+  },
+  themeLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  themeLabelActive: {
+    color: colors.primary,
+  },
+  themeActiveDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+
+  // Language
+  langRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  langChip: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    borderRadius: 999,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: colors.background,
+  },
+  langChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '14',
+  },
+  langText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  langTextActive: {
+    color: colors.primary,
+  },
+
+  // Switch rows
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  switchLabelGroup: {
+    flex: 1,
+    gap: 2,
   },
   switchLabel: {
     color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
-  timeEditorCard: {
+  switchDesc: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+
+  // Time editor
+  timeBlock: {
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 12,
     gap: 8,
+    marginLeft: 4,
   },
-  timeEditorLabel: {
+  timeBlockLabel: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  presetChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: colors.surface,
+  },
+  presetChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '14',
+  },
+  presetChipText: {
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
-  timeEditorRow: {
+  presetChipTextActive: {
+    color: colors.primary,
+  },
+  timeAdjustRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  timeAdjustBtn: {
+  timeDisplay: {
+    backgroundColor: colors.primary + '14',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  timeDisplayValue: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  adjustBtnGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 5,
+    flexWrap: 'wrap',
+  },
+  adjustBtn: {
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
@@ -503,60 +515,93 @@ const styles = createThemedStyles((colors) => StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  timeAdjustBtnText: {
+  adjustBtnText: {
     color: colors.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  timeEditorValue: {
-    color: colors.primaryDark,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  moreRow: {
+
+  // Notification mode
+  modeRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  updateMeta: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  updateMessage: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  updateActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  moreButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-  },
-  moreButtonDisabled: {
-    opacity: 0.55,
-  },
-  buttonInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
-  moreButtonText: {
+  modeChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: colors.background,
+  },
+  modeChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '14',
+  },
+  modeChipText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  modeChipTextActive: {
+    color: colors.primary,
+  },
+
+  // Update
+  updateMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  updateLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  versionBadge: {
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  versionBadgeText: {
     color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  updateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 2,
+  },
+  updateBtnText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '700',
   },
-  moreButtonTextDisabled: {
-    color: colors.textSecondary,
+
+  // More links
+  moreLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  moreLinkBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  moreLinkText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
 }));
