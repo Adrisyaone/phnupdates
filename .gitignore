@@ -35,3 +35,13 @@ Thumbs.db
 
 expo-env.d.ts
 # @end expo-cli
+
+.agents/*
+.augment/
+.claude/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.factory/
+.gemini/

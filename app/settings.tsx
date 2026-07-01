@@ -1,9 +1,11 @@
 import React from 'react';
 import { Alert, Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowUpCircle, Bell, ChevronRight, Info, Languages, LayoutGrid, Moon, Palette, Shield, Sun } from 'lucide-react-native';
+import { ArrowUpCircle, Bell, ChevronRight, Clock, Info, Languages, LayoutGrid, Minus, Moon, Palette, Plus, Shield, Sun, Sunrise, Sunset } from 'lucide-react-native';
 import { colors, createThemedStyles, ThemePreference } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { LANGUAGES, Language } from '@/constants/translations';
 import { NotificationMode, useSettings } from '@/contexts/SettingsContext';
 import { getCurrentAppVersion } from '@/services/appUpdate';
@@ -76,47 +78,79 @@ export default function SettingsScreen() {
   ) => {
     const time = notificationSettings[key]?.[0] ?? { id: '1', hour: fallbackHour, minute: fallbackMinute };
     const presets = [
-      { label: 'Morning', h: 7, m: 0 },
-      { label: 'Afternoon', h: 13, m: 0 },
-      { label: 'Evening', h: 18, m: 0 },
+      { label: 'Morning', h: 7, m: 0, icon: Sunrise },
+      { label: 'Afternoon', h: 13, m: 0, icon: Sun },
+      { label: 'Evening', h: 18, m: 0, icon: Sunset },
     ];
 
+    const ampm = time.hour < 12 ? 'AM' : 'PM';
+    const hour12 = time.hour % 12 === 0 ? 12 : time.hour % 12;
+
     return (
-      <View style={styles.timeBlock}>
+      <View style={styles.timeCard}>
         <Text style={styles.timeBlockLabel}>{label}</Text>
+
+        {/* Big time display */}
+        <View style={styles.timeHero}>
+          <LinearGradient
+            colors={[colors.primary + '1F', colors.primary + '05']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.timeHeroBg}
+          />
+          <View style={styles.timeHeroClock}>
+            <Clock size={20} color={colors.primary} />
+          </View>
+          <View style={styles.timeHeroValueRow}>
+            <Text style={styles.timeHeroValue}>{`${String(hour12).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`}</Text>
+            <Text style={styles.timeHeroAmPm}>{ampm}</Text>
+          </View>
+        </View>
+
+        {/* Preset segmented control */}
         <View style={styles.presetRow}>
           {presets.map((p) => {
             const active = p.h === time.hour && p.m === time.minute;
+            const PIcon = p.icon;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={p.label}
                 style={[styles.presetChip, active && styles.presetChipActive]}
                 onPress={() => { void updateSingleTime(key, p.h, p.m); }}
+                haptic
               >
+                <PIcon size={14} color={active ? colors.primary : colors.textSecondary} />
                 <Text style={[styles.presetChipText, active && styles.presetChipTextActive]}>{p.label}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
         </View>
-        <View style={styles.timeAdjustRow}>
-          <View style={styles.timeDisplay}>
-            <Text style={styles.timeDisplayValue}>
-              {`${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`}
-            </Text>
+
+        {/* Hour / Minute steppers */}
+        <View style={styles.stepperRow}>
+          <View style={styles.stepper}>
+            <Text style={styles.stepperLabel}>Hour</Text>
+            <View style={styles.stepperControls}>
+              <PressableScale style={styles.stepBtn} onPress={() => { void updateSingleTime(key, time.hour - 1, time.minute); }} haptic accessibilityLabel="Decrease hour">
+                <Minus size={16} color={colors.primary} />
+              </PressableScale>
+              <Text style={styles.stepperValue}>{String(hour12).padStart(2, '0')}</Text>
+              <PressableScale style={styles.stepBtn} onPress={() => { void updateSingleTime(key, time.hour + 1, time.minute); }} haptic accessibilityLabel="Increase hour">
+                <Plus size={16} color={colors.primary} />
+              </PressableScale>
+            </View>
           </View>
-          <View style={styles.adjustBtnGroup}>
-            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour - 1, time.minute); }}>
-              <Text style={styles.adjustBtnText}>−H</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour + 1, time.minute); }}>
-              <Text style={styles.adjustBtnText}>+H</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute - 5); }}>
-              <Text style={styles.adjustBtnText}>−5m</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.adjustBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute + 5); }}>
-              <Text style={styles.adjustBtnText}>+5m</Text>
-            </TouchableOpacity>
+          <View style={styles.stepper}>
+            <Text style={styles.stepperLabel}>Minute</Text>
+            <View style={styles.stepperControls}>
+              <PressableScale style={styles.stepBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute - 5); }} haptic accessibilityLabel="Decrease minute">
+                <Minus size={16} color={colors.primary} />
+              </PressableScale>
+              <Text style={styles.stepperValue}>{String(time.minute).padStart(2, '0')}</Text>
+              <PressableScale style={styles.stepBtn} onPress={() => { void updateSingleTime(key, time.hour, time.minute + 5); }} haptic accessibilityLabel="Increase minute">
+                <Plus size={16} color={colors.primary} />
+              </PressableScale>
+            </View>
           </View>
         </View>
       </View>
@@ -140,31 +174,54 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Appearance */}
-        <View style={styles.sectionHeader}>
+        <AnimatedEntrance from="up" style={styles.sectionHeader}>
           <Palette size={15} color={colors.primary} />
           <Text style={styles.sectionTitle}>Appearance</Text>
-        </View>
+        </AnimatedEntrance>
         <View style={styles.card}>
           <Text style={styles.fieldLabel}>Theme</Text>
           <View style={styles.themeRow}>
             {(['light', 'dark'] as ThemePreference[]).map((option) => {
               const active = theme === option;
               const Icon = option === 'light' ? Sun : Moon;
+              const isLight = option === 'light';
+              // Preview swatch colours mirror the actual light/dark palettes.
+              const pv = isLight
+                ? { bg: '#F8FAFC', card: '#FFFFFF', line: '#E2E8F0', bar: '#2DD4BF' }
+                : { bg: '#0D2035', card: '#132B44', line: '#1E3A5F', bar: '#2DD4BF' };
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={option}
                   style={[styles.themeCard, active && styles.themeCardActive]}
                   onPress={() => { void setTheme(option); }}
+                  haptic
                 >
-                  <Icon size={22} color={active ? colors.primary : colors.textSecondary} />
-                  <Text style={[styles.themeLabel, active && styles.themeLabelActive]}>
-                    {option === 'light' ? t('light') : t('dark')}
-                  </Text>
-                  {active ? <View style={styles.themeActiveDot} /> : null}
-                </TouchableOpacity>
+                  {/* Mini theme preview */}
+                  <View style={[styles.themePreview, { backgroundColor: pv.bg }]}>
+                    <View style={[styles.themePreviewBar, { backgroundColor: pv.bar }]} />
+                    <View style={[styles.themePreviewCard, { backgroundColor: pv.card }]}>
+                      <View style={[styles.themePreviewLine, { backgroundColor: pv.line, width: '70%' }]} />
+                      <View style={[styles.themePreviewLine, { backgroundColor: pv.line, width: '45%' }]} />
+                    </View>
+                  </View>
+
+                  <View style={styles.themeLabelRow}>
+                    <Icon size={16} color={active ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.themeLabel, active && styles.themeLabelActive]}>
+                      {isLight ? t('light') : t('dark')}
+                    </Text>
+                  </View>
+
+                  {active ? (
+                    <View style={styles.themeCheck}>
+                      <Check size={13} color="#FFFFFF" strokeWidth={3} />
+                    </View>
+                  ) : null}
+                </PressableScale>
               );
             })}
           </View>
@@ -200,10 +257,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           {renderSwitch('Health Tips Card', 'Daily rotating public health tips on home screen', featureSettings.healthTipsCard, (enabled) => { void updateFeatureSettings({ healthTipsCard: enabled }); })}
           {renderSwitch('Public Health Days Card', 'Awareness days and weeks calendar', featureSettings.publicHealthDaysCard, (enabled) => { void updateFeatureSettings({ publicHealthDaysCard: enabled }); })}
-          {renderSwitch('Quote of the Day Card', 'Daily public health inspiration quote', featureSettings.quoteCard, (enabled) => { void updateFeatureSettings({ quoteCard: enabled }); })}
           {renderSwitch('Latest News Section', 'Recent public health news on home screen', featureSettings.latestNewsSection, (enabled) => { void updateFeatureSettings({ latestNewsSection: enabled }); })}
-          {renderSwitch('Opportunities Section', 'Jobs, grants and vacancy listings', featureSettings.opportunitiesSection, (enabled) => { void updateFeatureSettings({ opportunitiesSection: enabled }); })}
-          {renderSwitch('Job Portal Section', 'Job openings from organizations', featureSettings.jobPortalSection, (enabled) => { void updateFeatureSettings({ jobPortalSection: enabled }); })}
           {renderSwitch('Menu Grid Section', 'Icon grid for quick navigation to all features', featureSettings.menuGridSection, (enabled) => { void updateFeatureSettings({ menuGridSection: enabled }); })}
         </View>
 
@@ -442,13 +496,13 @@ const styles = createThemedStyles((colors) => ({
   },
 
   // Time editor
-  timeBlock: {
+  timeCard: {
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
     marginLeft: 4,
   },
   timeBlockLabel: {
@@ -458,16 +512,63 @@ const styles = createThemedStyles((colors) => ({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  presetRow: {
+  timeHero: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    overflow: 'hidden',
+  },
+  timeHeroBg: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  timeHeroClock: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '1F',
+  },
+  timeHeroValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 6,
   },
+  timeHeroValue: {
+    color: colors.text,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  timeHeroAmPm: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   presetChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    borderRadius: 12,
+    paddingVertical: 9,
     backgroundColor: colors.surface,
   },
   presetChipActive: {
@@ -477,48 +578,52 @@ const styles = createThemedStyles((colors) => ({
   presetChipText: {
     color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   presetChipTextActive: {
     color: colors.primary,
   },
-  timeAdjustRow: {
+  stepperRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  timeDisplay: {
-    backgroundColor: colors.primary + '14',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.primary + '30',
-  },
-  timeDisplayValue: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  adjustBtnGroup: {
+  stepper: {
     flex: 1,
-    flexDirection: 'row',
-    gap: 5,
-    flexWrap: 'wrap',
+    gap: 6,
   },
-  adjustBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  adjustBtnText: {
-    color: colors.text,
+  stepperLabel: {
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    textAlign: 'center',
+  },
+  stepperControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 4,
+  },
+  stepBtn: {
+    width: 40,
+    height: 36,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '14',
+  },
+  stepperValue: {
+    flex: 1,
+    textAlign: 'center',
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 
   // Notification mode

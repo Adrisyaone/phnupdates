@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { CalendarDays, ArrowRightLeft } from 'lucide-react-native';
 import adbs from 'ad-bs-converter';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 
 type DateMode = 'ad-to-bs' | 'bs-to-ad';
 
@@ -73,65 +76,78 @@ export default function DateConverterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <View style={styles.content}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroIcon}>
-            <CalendarDays size={22} color={colors.surface} />
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroIcon}>
+              <CalendarDays size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        </View>
+        </GradientHero>
 
-        <View style={styles.segmentRow}>
-          {([
-            { key: 'ad-to-bs', label: 'AD to BS' },
-            { key: 'bs-to-ad', label: 'BS to AD' },
-          ] as const).map((item) => {
-            const active = mode === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.segmentButton, active && styles.segmentButtonActive]}
-                onPress={() => {
-                  setMode(item.key);
-                  setInputValue(item.key === 'ad-to-bs' ? '2026/05/27' : '2083/02/14');
-                }}
-              >
-                <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>{inputLabel}</Text>
-          <TextInput
-            value={inputValue}
-            onChangeText={setInputValue}
-            placeholder={placeholder}
-            placeholderTextColor={colors.textSecondary}
-            style={styles.input}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.helperText}>Use YYYY/MM/DD or YYYY-MM-DD format.</Text>
-        </View>
-
-        <View style={styles.resultCard}>
-          <View style={styles.resultRow}>
-            <ArrowRightLeft size={18} color={colors.primary} />
-            <Text style={styles.resultLabel}>{outputLabel}</Text>
+        <View style={styles.body}>
+          <View style={styles.segmentRow}>
+            {([
+              { key: 'ad-to-bs', label: 'AD to BS' },
+              { key: 'bs-to-ad', label: 'BS to AD' },
+            ] as const).map((item) => {
+              const active = mode === item.key;
+              return (
+                <PressableScale
+                  key={item.key}
+                  style={[styles.segmentButton, active && styles.segmentButtonActive]}
+                  onPress={() => {
+                    setMode(item.key);
+                    setInputValue(item.key === 'ad-to-bs' ? '2026/05/27' : '2083/02/14');
+                  }}
+                >
+                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
+                </PressableScale>
+              );
+            })}
           </View>
-          {conversion ? (
-            <>
-              <Text style={styles.resultValue}>{conversion.targetValue}</Text>
-              <Text style={styles.resultDetail}>{conversion.targetDetail}</Text>
-            </>
-          ) : (
-            <Text style={styles.resultDetail}>Enter a valid date to see the converted result.</Text>
-          )}
+
+          <View style={styles.card}>
+            <Text style={styles.fieldLabel}>{inputLabel}</Text>
+            <TextInput
+              value={inputValue}
+              onChangeText={setInputValue}
+              placeholder={placeholder}
+              placeholderTextColor={colors.textSecondary}
+              style={styles.input}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.helperText}>Use YYYY/MM/DD or YYYY-MM-DD format.</Text>
+          </View>
+
+          <AnimatedEntrance key={conversion?.targetValue ?? 'none'} from="up">
+            <View style={styles.resultCard}>
+              <LinearGradient
+                colors={[colors.primary + '14', colors.primary + '03']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.resultBg}
+              />
+              <View style={styles.resultRow}>
+                <ArrowRightLeft size={18} color={colors.primary} />
+                <Text style={styles.resultLabel}>{outputLabel}</Text>
+              </View>
+              {conversion ? (
+                <>
+                  <Text style={styles.resultValue}>{conversion.targetValue}</Text>
+                  <Text style={styles.resultDetail}>{conversion.targetDetail}</Text>
+                </>
+              ) : (
+                <Text style={styles.resultDetail}>Enter a valid date to see the converted result.</Text>
+              )}
+            </View>
+          </AnimatedEntrance>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -142,23 +158,45 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   content: {
-    flex: 1,
-    padding: 16,
-    gap: 14,
+    paddingBottom: spacing.xxl,
+  },
+  hero: {
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  heroIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
+    marginBottom: spacing.xs,
+  },
+  body: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   segmentRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.md,
   },
   segmentButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: radii.md,
+    paddingVertical: 13,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    ...elevation('sm'),
   },
   segmentButtonActive: {
     backgroundColor: colors.primary,
@@ -170,31 +208,15 @@ const styles = createThemedStyles((colors) => ({
     fontWeight: '700',
   },
   segmentTextActive: {
-    color: colors.surface,
-  },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
-    gap: 10,
-  },
-  heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
+    color: '#FFFFFF',
   },
   title: {
-    color: colors.text,
-    fontSize: 24,
+    color: '#FFFFFF',
+    fontSize: 26,
     fontWeight: '800',
   },
   subtitle: {
-    color: colors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 20,
   },
@@ -202,9 +224,10 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     padding: 16,
     gap: 10,
+    ...elevation('md'),
   },
   fieldLabel: {
     color: colors.text,
@@ -216,9 +239,9 @@ const styles = createThemedStyles((colors) => ({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     fontSize: 16,
   },
   helperText: {
@@ -228,10 +251,15 @@ const styles = createThemedStyles((colors) => ({
   resultCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
+    borderColor: colors.primary + '40',
+    borderRadius: radii.lg,
+    padding: 20,
     gap: 8,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  resultBg: {
+    ...({ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as const),
   },
   resultRow: {
     flexDirection: 'row',

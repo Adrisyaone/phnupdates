@@ -8,6 +8,7 @@ import { Camera, Image as ImageIcon, Flame, Mic, MicOff, X } from 'lucide-react-
 import { useMutation } from '@tanstack/react-query';
 import { estimateCaloriesFromText, estimateCaloriesFromImage } from '@/services/calorieEstimation';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 
 export default function CalorieEstimatorScreen() {
   const router = useRouter();
@@ -218,15 +219,16 @@ export default function CalorieEstimatorScreen() {
     <>
       <Stack.Screen options={{ title: 'Calorie Estimation' }} />
       <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+        <AuroraBackground tint={colors.secondary} />
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <View style={styles.heroCard}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <AnimatedEntrance from="up" style={styles.heroCard}>
               <View style={styles.heroIcon}>
                 <Flame size={22} color={colors.surface} />
               </View>
               <Text style={styles.title}>Calorie Estimation</Text>
               <Text style={styles.subtitle}>Estimate calories from text, photo, or voice. Results are shown only on this screen.</Text>
-            </View>
+            </AnimatedEntrance>
 
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Describe your food</Text>
@@ -251,7 +253,7 @@ export default function CalorieEstimatorScreen() {
                 </TouchableOpacity>
               </View>
               {isRecording ? <Text style={styles.helperText}>Recording... Tap mic to stop</Text> : null}
-              <TouchableOpacity style={[styles.primaryButton, (!input.trim() || isLoading) && styles.buttonDisabled]} onPress={handleAnalyzeText} disabled={!input.trim() || isLoading}>
+              <PressableScale style={[styles.primaryButton, (!input.trim() || isLoading) && styles.buttonDisabled]} onPress={handleAnalyzeText} disabled={!input.trim() || isLoading} haptic>
                 {isLoading && !selectedImage ? (
                   <ActivityIndicator color={colors.surface} size="small" />
                 ) : (
@@ -260,7 +262,7 @@ export default function CalorieEstimatorScreen() {
                     <Text style={styles.primaryButtonText}>Analyze</Text>
                   </>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             </View>
 
             <View style={styles.card}>

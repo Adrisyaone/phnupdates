@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftRight, Scale, Thermometer } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 
 type ConversionMode = 'length' | 'weight' | 'temperature';
 
@@ -72,15 +75,19 @@ export default function MeasurementConverterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroIcon}>
-            <ArrowLeftRight size={22} color={colors.surface} />
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroIcon}>
+              <ArrowLeftRight size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.title}>Measurement Conversion</Text>
+            <Text style={styles.subtitle}>Switch between length, weight, and temperature values.</Text>
           </View>
-          <Text style={styles.title}>Measurement Conversion</Text>
-          <Text style={styles.subtitle}>Switch between length, weight, and temperature values.</Text>
-        </View>
+        </GradientHero>
 
+        <View style={styles.body}>
         <View style={styles.segmentRow}>
           {([
             { key: 'length', label: 'Length', icon: ArrowLeftRight },
@@ -90,7 +97,7 @@ export default function MeasurementConverterScreen() {
             const active = mode === item.key;
             const Icon = item.icon;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={item.key}
                 style={[styles.segmentButton, active && styles.segmentButtonActive]}
                 onPress={() => {
@@ -107,9 +114,9 @@ export default function MeasurementConverterScreen() {
                   }
                 }}
               >
-                <Icon size={16} color={active ? colors.surface : colors.primary} />
+                <Icon size={16} color={active ? '#FFFFFF' : colors.primary} />
                 <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
         </View>
@@ -166,12 +173,21 @@ export default function MeasurementConverterScreen() {
           </View>
         </View>
 
-        <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>Converted Value</Text>
-          <Text style={styles.resultValue}>{formattedResult}</Text>
-          <Text style={styles.resultCaption}>
-            {inputValue || '0'} {fromUnit} = {formattedResult} {toUnit}
-          </Text>
+        <AnimatedEntrance key={formattedResult} from="up">
+          <View style={styles.resultCard}>
+            <LinearGradient
+              colors={[colors.primary + '14', colors.primary + '03']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.resultBg}
+            />
+            <Text style={styles.resultLabel}>Converted Value</Text>
+            <Text style={styles.resultValue}>{formattedResult}</Text>
+            <Text style={styles.resultCaption}>
+              {inputValue || '0'} {fromUnit} = {formattedResult} {toUnit}
+            </Text>
+          </View>
+        </AnimatedEntrance>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -184,32 +200,41 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    gap: 14,
+    paddingBottom: spacing.xxl,
   },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
-    gap: 10,
+  hero: {
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  body: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  resultBg: {
+    ...({ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as const),
   },
   heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
+    marginBottom: spacing.xs,
   },
   title: {
-    color: colors.text,
-    fontSize: 24,
+    color: '#FFFFFF',
+    fontSize: 26,
     fontWeight: '800',
   },
   subtitle: {
-    color: colors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 20,
   },
@@ -223,11 +248,12 @@ const styles = createThemedStyles((colors) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 11,
-    borderRadius: 14,
+    paddingVertical: 12,
+    borderRadius: radii.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    ...elevation('sm'),
   },
   segmentButtonActive: {
     backgroundColor: colors.primary,
@@ -239,15 +265,16 @@ const styles = createThemedStyles((colors) => ({
     fontSize: 12,
   },
   segmentTextActive: {
-    color: colors.surface,
+    color: '#FFFFFF',
   },
   inputCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     padding: 16,
     gap: 16,
+    ...elevation('md'),
   },
   fieldBlock: {
     gap: 8,
@@ -301,25 +328,29 @@ const styles = createThemedStyles((colors) => ({
     fontWeight: '700',
   },
   unitChipTextActive: {
-    color: colors.surface,
+    color: '#FFFFFF',
   },
   resultCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
+    borderColor: colors.primary + '40',
+    borderRadius: radii.lg,
+    padding: 20,
     alignItems: 'center',
     gap: 6,
+    overflow: 'hidden',
+    ...elevation('md'),
   },
   resultLabel: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   resultValue: {
-    color: colors.text,
-    fontSize: 30,
+    color: colors.primary,
+    fontSize: 34,
     fontWeight: '900',
   },
   resultCaption: {

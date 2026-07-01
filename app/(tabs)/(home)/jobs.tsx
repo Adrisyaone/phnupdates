@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JOB_PORTAL_LABELS, getMenuThemeColor } from '@/constants/blogMenus';
 import { BlogPost, extractImageFromContent, fetchPostsByLabels, getExcerpt } from '@/services/bloggerApi';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { getInterestedPostIds, toggleInterestedPost } from '@/services/interestedPosts';
 
 type OpportunityFilter = {
@@ -276,6 +277,7 @@ export default function JobsPortalScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <AuroraBackground tint={menuColor} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -283,7 +285,7 @@ export default function JobsPortalScreen() {
         style={styles.filterButtonsScroll}
       >
         {OPPORTUNITY_FILTERS.map((filter) => (
-          <TouchableOpacity
+          <PressableScale
             key={filter.key}
             style={[
               styles.filterChip,
@@ -302,7 +304,7 @@ export default function JobsPortalScreen() {
             >
               {filter.title}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </ScrollView>
 
@@ -342,9 +344,10 @@ export default function JobsPortalScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadJobs(true)} />}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const imageUrl = item.images?.[0]?.url || extractImageFromContent(item.content);
             return (
+            <AnimatedEntrance index={Math.min(index, 8)} from="up">
             <View style={[styles.jobCard, { borderColor: menuColor + '55', backgroundColor: menuColor + '0A' }]}>
               {imageUrl ? (
                 <TouchableOpacity style={styles.jobImageWrap} onPress={() => openPost(item)} activeOpacity={0.85}>
@@ -371,6 +374,7 @@ export default function JobsPortalScreen() {
               <Text style={styles.jobExcerpt} numberOfLines={3}>{getExcerpt(item.content, 180)}</Text>
               </TouchableOpacity>
             </View>
+            </AnimatedEntrance>
           )}}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>

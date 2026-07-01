@@ -8,6 +8,7 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 
 type PickedImage = {
   id: string;
@@ -160,8 +161,9 @@ export default function CamScannerScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <Stack.Screen options={{ title: 'CamScanner' }} />
+      <AuroraBackground />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.heroCard}>
+        <AnimatedEntrance from="up" style={styles.heroCard}>
           <View style={styles.heroIconWrap}>
             <ScanLine size={22} color={colors.primary} />
           </View>
@@ -169,22 +171,22 @@ export default function CamScannerScreen() {
           <Text style={styles.heroSubtitle}>
             Pick images from your gallery or camera and convert them into a single PDF document.
           </Text>
-        </View>
+        </AnimatedEntrance>
 
         <View style={styles.addRow}>
-          <TouchableOpacity style={styles.addButton} onPress={() => { void addFromGallery(); }}>
+          <PressableScale style={styles.addButton} onPress={() => { void addFromGallery(); }} haptic>
             <FilePlus2 size={18} color={colors.primary} />
             <Text style={styles.addButtonText}>Gallery</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={() => { void addFromCamera(); }}>
+          </PressableScale>
+          <PressableScale style={styles.addButton} onPress={() => { void addFromCamera(); }} haptic>
             <Camera size={18} color={colors.primary} />
             <Text style={styles.addButtonText}>Camera</Text>
-          </TouchableOpacity>
+          </PressableScale>
           {images.length > 0 && (
-            <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
+            <PressableScale style={styles.clearButton} onPress={clearAll}>
               <Trash2 size={18} color={colors.error} />
               <Text style={styles.clearButtonText}>Clear all</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
 

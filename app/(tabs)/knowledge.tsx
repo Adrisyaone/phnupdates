@@ -26,6 +26,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AuroraBackground } from '@/components/ui';
 import { useFood } from '@/contexts/FoodContext';
 import * as Haptics from 'expo-haptics';
 import {
@@ -897,6 +898,7 @@ export default function KnowledgeHubScreen() {
 
   return (
     <View style={styles.container}>
+      <AuroraBackground />
       <SafeAreaView edges={['left', 'right']} style={styles.safeTop}>
         <View style={styles.header}>
           <Text style={styles.headerSubtitle}>Health resources at your fingertips</Text>

@@ -13,17 +13,19 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Facebook, FileText, Globe, Info, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Shield, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
+import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, gradients, radii, spacing, glow } from '@/constants/theme';
+import { AnimatedEntrance, GradientHero, PressableScale, SectionHeader } from '@/components/ui';
 import { ALL_HEALTH_TIPS } from '@/mocks/healthTips';
 import { PUBLIC_HEALTH_DAYS } from '@/constants/publicHealthDays';
 import { PUBLIC_HEALTH_QUOTES } from '@/constants/publicHealthQuotes';
 import { useSettings } from '@/contexts/SettingsContext';
 import { getHealthTipDetails, HealthTipDetails } from '@/services/healthTipInfo';
 import { fetchPostsByLabels, BlogPost } from '@/services/bloggerApi';
-import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 
 const MONTH_LOCALE_MAP = {
   en: 'en-US',
@@ -134,10 +136,6 @@ export default function DashboardScreen() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [latestNews, setLatestNews] = useState<BlogPost[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
-  const [latestOpportunities, setLatestOpportunities] = useState<BlogPost[]>([]);
-  const [isOpportunitiesLoading, setIsOpportunitiesLoading] = useState(true);
-  const [latestJobs, setLatestJobs] = useState<JobPosting[]>([]);
-  const [isJobsLoading, setIsJobsLoading] = useState(true);
 
   useEffect(() => {
     const loadLatestNews = async () => {
@@ -152,69 +150,48 @@ export default function DashboardScreen() {
         setIsNewsLoading(false);
       }
     };
-    const loadLatestOpportunities = async () => {
-      try {
-        setIsOpportunitiesLoading(true);
-        const posts = await fetchPostsByLabels([
-          'vacancy',
-          'Grants',
-          'scholarships',
-          'expression of interest',
-          'call for papers',
-          'call for abstract',
-        ], 5, 5);
-        // Sort newest to oldest
-        posts.sort((a, b) => new Date(b.published).getTime() - new Date(a.published).getTime());
-        setLatestOpportunities(posts);
-      } catch (error) {
-        console.log('[Dashboard] Failed to load latest opportunities:', error);
-        setLatestOpportunities([]);
-      } finally {
-        setIsOpportunitiesLoading(false);
-      }
-    };
-    const loadLatestJobs = async () => {
-      try {
-        setIsJobsLoading(true);
-        const result = await loadJobPostings();
-        const active = result.jobs.filter((j) => !isDeadlinePassed(j.applicationDeadline));
-        setLatestJobs(active.slice(0, 5));
-      } catch (error) {
-        console.log('[Dashboard] Failed to load job postings:', error);
-        setLatestJobs([]);
-      } finally {
-        setIsJobsLoading(false);
-      }
-    };
     loadLatestNews();
-    loadLatestOpportunities();
-    loadLatestJobs();
   }, []);
 
   const drawerWidth = Math.min(320, Dimensions.get('window').width * 0.82);
   const drawerTranslateX = React.useRef(new Animated.Value(-drawerWidth)).current;
+  const drawerBackdropOpacity = React.useRef(new Animated.Value(0)).current;
 
   const openDrawer = React.useCallback(() => {
     setIsDrawerOpen(true);
-    Animated.spring(drawerTranslateX, {
-      toValue: 0,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 16,
-    }).start();
-  }, [drawerTranslateX]);
+    Animated.parallel([
+      Animated.spring(drawerTranslateX, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 0,
+        speed: 16,
+      }),
+      Animated.timing(drawerBackdropOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [drawerTranslateX, drawerBackdropOpacity]);
 
   const closeDrawer = React.useCallback(() => {
-    Animated.timing(drawerTranslateX, {
-      toValue: -drawerWidth,
-      duration: 180,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
+    Animated.parallel([
+      Animated.timing(drawerTranslateX, {
+        toValue: -drawerWidth,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(drawerBackdropOpacity, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
       if (finished) {
         setIsDrawerOpen(false);
       }
     });
-  }, [drawerTranslateX, drawerWidth]);
+  }, [drawerTranslateX, drawerBackdropOpacity, drawerWidth]);
 
   const panResponder = React.useMemo(
     () =>
@@ -236,7 +213,7 @@ export default function DashboardScreen() {
 
   const copy = HOME_COPY[language] ?? HOME_COPY.en;
 
-  const { dailyTip, dailyQuote, todayDays, selectedMonthDays, selectedMonthName } = useMemo(() => {
+  const { dailyTip, dailyQuote, todayDays, selectedMonthDays, selectedMonthName, featuredDay, featuredIsToday } = useMemo(() => {
     const now = new Date();
     const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
     const currentMonth = now.getMonth() + 1;
@@ -253,12 +230,23 @@ export default function DashboardScreen() {
     const byToday = byCurrentMonth.filter((item) => item.day === day);
     const bySelectedMonth = PUBLIC_HEALTH_DAYS.filter((item) => item.month === selectedMonth);
 
+    // Featured day for the hero banner: today's day if any, otherwise the next
+    // upcoming awareness day in the current month (falling back to the earliest).
+    let featured = byToday[0] ?? null;
+    const featuredToday = !!featured;
+    if (!featured) {
+      const sorted = [...byCurrentMonth].sort((a, b) => a.day - b.day);
+      featured = sorted.find((item) => item.day >= day) ?? sorted[0] ?? null;
+    }
+
     return {
       dailyTip: selectedTip,
       dailyQuote: selectedQuote,
       todayDays: byToday,
       selectedMonthDays: bySelectedMonth,
       selectedMonthName: selectedMonthLabel,
+      featuredDay: featured,
+      featuredIsToday: featuredToday,
     };
   }, [monthOffset, language]);
 
@@ -542,62 +530,108 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <View style={styles.screen} {...panResponder.panHandlers}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {/* Hero Banner */}
-          <View style={styles.heroBanner}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/logo.png')}
-                style={styles.heroLogo}
-              />
-            </View>
-            <View style={styles.heroContent}>
-              <Text style={styles.heroTitle}>{copy.title}</Text>
-              <Text style={styles.heroSubtitle}>{copy.subtitle}</Text>
-            </View>
-          </View>
+        <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Animated Gradient Hero */}
+          <GradientHero rounded style={styles.hero}>
+            <SafeAreaView edges={['top']} style={styles.heroSafe}>
+              <View style={styles.heroTopRow}>
+                <PressableScale style={styles.heroIconBtn} onPress={openDrawer} haptic accessibilityLabel="Open menu">
+                  <Menu size={20} color="#FFFFFF" />
+                </PressableScale>
+                <View style={styles.heroBrandPill}>
+                  <Sparkles size={13} color="#FFFFFF" />
+                  <Text style={styles.heroBrandPillText}>Public Health Nepal</Text>
+                </View>
+                <PressableScale style={styles.heroIconBtn} onPress={() => router.push('/settings')} haptic accessibilityLabel="Open settings">
+                  <Settings size={20} color="#FFFFFF" />
+                </PressableScale>
+              </View>
 
-          {/* Menu Button */}
-          <View style={styles.topBarRow}>
-            <TouchableOpacity style={styles.menuButton} onPress={openDrawer}>
-              <Menu size={18} color={colors.text} />
-              <Text style={styles.menuButtonLabel}>Menu</Text>
-            </TouchableOpacity>
-          </View>
+              <AnimatedEntrance from="up" style={styles.heroCenter}>
+                <View style={styles.logoRing}>
+                  <View style={styles.logoRingInner}>
+                    <Image source={require('@/assets/images/logo.png')} style={styles.heroLogo} />
+                  </View>
+                </View>
+                <Text style={styles.heroTitle}>{copy.title}</Text>
+                <Text style={styles.heroSubtitle}>{copy.subtitle}</Text>
+              </AnimatedEntrance>
 
-          {/* Health Tips Card */}
-          
+              {/* Quote + Public Health Day highlights inside the banner */}
+              <AnimatedEntrance from="up" delay={90} style={styles.heroHighlights}>
+                {featuredDay ? (
+                  <PressableScale
+                    style={styles.heroDayCard}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/public-health-day',
+                        params: {
+                          month: String(featuredDay.month),
+                          day: String(featuredDay.day),
+                          title: featuredDay.title,
+                          type: featuredDay.type,
+                        },
+                      });
+                    }}
+                    haptic
+                  >
+                    <View style={styles.heroDayIcon}>
+                      <CalendarDays size={18} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.heroDayBody}>
+                      <Text style={styles.heroDayBadge}>{featuredIsToday ? "TODAY'S HEALTH DAY" : 'UPCOMING HEALTH DAY'}</Text>
+                      <Text style={styles.heroDayTitle} numberOfLines={2}>{featuredDay.title}</Text>
+                    </View>
+                    <ChevronRight size={18} color="#FFFFFFCC" />
+                  </PressableScale>
+                ) : null}
 
-
+                <View style={styles.heroQuoteCard}>
+                  <View style={styles.heroQuoteIcon}>
+                    <Sparkles size={15} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.heroQuoteBody}>
+                    <Text style={styles.heroQuoteText}>&quot;{dailyQuote?.quote || copy.quoteFallback}&quot;</Text>
+                    <Text style={styles.heroQuoteAuthor}>— {dailyQuote?.author || copy.unknown}</Text>
+                  </View>
+                </View>
+              </AnimatedEntrance>
+            </SafeAreaView>
+          </GradientHero>
 
           {/* Menu Grid Sections */}
           {featureSettings.menuGridSection ? (
           <View style={styles.menuGridSection}>
-            <Text style={styles.sectionSeparator}>Menu</Text>
             <View style={styles.sectionList}>
-              {homeMenuSections.map((section) => (
+              {homeMenuSections.map((section, sectionIndex) => (
                 <View key={section.title} style={styles.sectionBlock}>
-                  <View style={styles.sectionLabelBlock}>
-                    <Text style={styles.sectionHeading}>{section.title}</Text>
-                    <Text style={styles.sectionSubheading}>{section.subtitle}</Text>
-                  </View>
+                  <SectionHeader title={section.title} subtitle={section.subtitle} />
                   <View style={styles.menuGrid}>
-                    {section.keys.map((key) => {
+                    {section.keys.map((key, i) => {
                       const menu = homeMenuItemMap.get(key);
                       if (!menu) return null;
                       const Icon = menu.icon;
                       const menuColor = menu.color;
                       return (
-                        <TouchableOpacity
-                          key={menu.key}
-                          style={[styles.gridCard, { backgroundColor: menuColor + '15', borderColor: menuColor + '40' }]}
-                          onPress={menu.onPress}
-                        >
-                          <View style={[styles.gridIconContainer, { backgroundColor: menuColor + '20' }]}>
-                            <Icon size={28} color={menuColor} />
-                          </View>
-                          <Text style={styles.gridCardTitle}>{menu.title}</Text>
-                        </TouchableOpacity>
+                        <AnimatedEntrance key={menu.key} index={i} delay={sectionIndex * 40} from="up" style={styles.gridCardWrap}>
+                          <PressableScale style={[styles.gridCard, { borderColor: menuColor + '33' }]} onPress={menu.onPress} haptic>
+                            <LinearGradient
+                              colors={[menuColor + '14', menuColor + '05']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.gridCardBg}
+                            />
+                            <LinearGradient
+                              colors={[menuColor, menuColor + 'CC']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={[styles.gridIconContainer, glow(menuColor, 0.3)]}
+                            >
+                              <Icon size={26} color="#FFFFFF" />
+                            </LinearGradient>
+                            <Text style={styles.gridCardTitle} numberOfLines={2}>{menu.title}</Text>
+                          </PressableScale>
+                        </AnimatedEntrance>
                       );
                     })}
                   </View>
@@ -607,49 +641,44 @@ export default function DashboardScreen() {
           </View>
           ) : null}
 
-          {/* Latest News Section with Hide/Unhide */}
+          {/* Latest News Section */}
           {featureSettings.latestNewsSection ? (
           <View style={styles.newsSection}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.newsSectionTitle}>Latest News</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  void updateFeatureSettings({ latestNewsSection: false });
-                }}
-              >
-                <Text style={styles.hideButtonText}>Hide</Text>
-              </TouchableOpacity>
-            </View>
+            <SectionHeader
+              title="Latest News"
+              accent={colors.primary}
+              right={(
+                <TouchableOpacity onPress={() => { void updateFeatureSettings({ latestNewsSection: false }); }}>
+                  <Text style={styles.hideButtonText}>Hide</Text>
+                </TouchableOpacity>
+              )}
+            />
             {isNewsLoading ? (
               <View style={styles.newsLoadingContainer}>
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : latestNews.length > 0 ? (
               <>
-                {latestNews.slice(0, 5).map((post) => (
-                  <TouchableOpacity
-                    key={post.id}
-                    style={styles.newsCard}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/web-viewer',
-                        params: { url: post.url },
-                      });
-                    }}
-                  >
-                    <View style={styles.newsCardContent}>
-                      <Text style={styles.newsCardTitle} numberOfLines={2}>{post.title}</Text>
-                      <Text style={styles.newsCardDate}>
-                        {new Date(post.published).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    <ChevronRightCircle size={24} color={colors.primary} />
-                  </TouchableOpacity>
+                {latestNews.slice(0, 5).map((post, i) => (
+                  <AnimatedEntrance key={post.id} index={i} from="up">
+                    <PressableScale
+                      style={styles.newsCard}
+                      onPress={() => { router.push({ pathname: '/web-viewer', params: { url: post.url } }); }}
+                    >
+                      <View style={[styles.newsAccentRail, { backgroundColor: colors.primary }]} />
+                      <View style={styles.newsCardContent}>
+                        <Text style={styles.newsCardTitle} numberOfLines={2}>{post.title}</Text>
+                        <Text style={styles.newsCardDate}>{new Date(post.published).toLocaleDateString()}</Text>
+                      </View>
+                      <ChevronRightCircle size={22} color={colors.primary} />
+                    </PressableScale>
+                  </AnimatedEntrance>
                 ))}
                 {latestNews.length > 5 && (
-                  <TouchableOpacity style={styles.moreButton} onPress={() => router.push('/(tabs)/(home)/category?menuKey=news&submenuKey=public-health-news')}>
+                  <PressableScale style={styles.moreButton} onPress={() => router.push('/(tabs)/(home)/category?menuKey=news&submenuKey=public-health-news')}>
                     <Text style={styles.moreButtonText}>More News</Text>
-                  </TouchableOpacity>
+                    <ChevronRight size={16} color={colors.primary} />
+                  </PressableScale>
                 )}
               </>
             ) : null}
@@ -657,118 +686,34 @@ export default function DashboardScreen() {
           ) : null}
 
 
-          {/* Job Portal Section */}
-          {featureSettings.jobPortalSection ? (
-          <View style={styles.newsSection}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.newsSectionTitle}>Job Portal</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  void updateFeatureSettings({ jobPortalSection: false });
-                }}
-              >
-                <Text style={styles.hideButtonText}>Hide</Text>
-              </TouchableOpacity>
-            </View>
-            {isJobsLoading ? (
-              <View style={styles.newsLoadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : latestJobs.length > 0 ? (
-              <>
-                {latestJobs.slice(0, 5).map((job) => {
-                  const deadline = formatDeadline(job.applicationDeadline);
-                  return (
-                    <TouchableOpacity
-                      key={job.id}
-                      style={styles.newsCard}
-                      onPress={() => { router.push('/(tabs)/(home)/job-portal'); }}
-                    >
-                      <View style={styles.newsCardContent}>
-                        <Text style={styles.newsCardTitle} numberOfLines={2}>{job.jobTitle}</Text>
-                        <Text style={styles.newsCardDate}>
-                          {[job.organization, job.jobType, deadline ? `Deadline: ${deadline}` : null].filter(Boolean).join(' · ')}
-                        </Text>
-                      </View>
-                      <ChevronRightCircle size={24} color="#7C3AED" />
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity style={styles.moreButton} onPress={() => router.push('/(tabs)/(home)/job-portal')}>
-                  <Text style={styles.moreButtonText}>View All Jobs</Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-          </View>
-          ) : null}
-
-          {/* New Opportunities Section with Hide/Unhide */}
-          {featureSettings.opportunitiesSection ? (
-          <View style={styles.newsSection}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.newsSectionTitle}>New Opportunities</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  void updateFeatureSettings({ opportunitiesSection: false });
-                }}
-              >
-                <Text style={styles.hideButtonText}>Hide</Text>
-              </TouchableOpacity>
-            </View>
-            {isOpportunitiesLoading ? (
-              <View style={styles.newsLoadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : latestOpportunities.length > 0 ? (
-              <>
-                {latestOpportunities.slice(0, 5).map((post) => (
-                  <TouchableOpacity
-                    key={post.id}
-                    style={styles.newsCard}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/web-viewer',
-                        params: { url: post.url },
-                      });
-                    }}
-                  >
-                    <View style={styles.newsCardContent}>
-                      <Text style={styles.newsCardTitle} numberOfLines={2}>{post.title}</Text>
-                      <Text style={styles.newsCardDate}>
-                        {new Date(post.published).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    <ChevronRightCircle size={24} color={colors.primary} />
-                  </TouchableOpacity>
-                ))}
-                {latestOpportunities.length > 5 && (
-                  <TouchableOpacity style={styles.moreButton} onPress={() => router.push('/(tabs)/(home)/jobs?menuKey=opportunities')}>
-                    <Text style={styles.moreButtonText}>More Opportunities</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : null}
-          </View>
-          ) : null}
-
-          {/* Bottom duplicate of Health Tips / Public Health Days / Quote - keep identical to top */}
+          {/* Health Tips */}
           {featureSettings.healthTipsCard ? (
-            <TouchableOpacity style={[styles.topCard, styles.highlightCard]} activeOpacity={0.9} onPress={() => { void openTipDetails(); }}>
-              <View style={styles.topCardTitleRow}>
-                <Lightbulb size={18} color={colors.primary} />
-                <Text style={styles.topCardTitle}>{copy.healthTips}</Text>
-              </View>
-              <Text style={styles.tipText}>{dailyTip?.tip || 'No health tip available today.'}</Text>
-              <Text style={styles.tipTapHint}>Tap to view detailed guidance</Text>
-            </TouchableOpacity>
+            <AnimatedEntrance from="up" style={styles.cardOuter}>
+              <PressableScale style={[styles.topCard, styles.highlightCard]} onPress={() => { void openTipDetails(); }}>
+                <View style={styles.topCardTitleRow}>
+                  <View style={[styles.cardIconChip, { backgroundColor: colors.primary + '1F' }]}>
+                    <Lightbulb size={16} color={colors.primary} />
+                  </View>
+                  <Text style={styles.topCardTitle}>{copy.healthTips}</Text>
+                </View>
+                <Text style={styles.tipText}>{dailyTip?.tip || 'No health tip available today.'}</Text>
+                <View style={styles.tipHintRow}>
+                  <Text style={styles.tipTapHint}>Tap to view detailed guidance</Text>
+                  <ChevronRight size={14} color={colors.primaryDark} />
+                </View>
+              </PressableScale>
+            </AnimatedEntrance>
           ) : null}
 
           {featureSettings.publicHealthDaysCard ? (
+          <AnimatedEntrance from="up" style={styles.cardOuter}>
           <View style={[styles.topCard, styles.publicHealthCard]}>
             {/* Header row */}
             <View style={styles.phdHeader}>
               <View style={styles.topCardTitleRow}>
-                <CalendarDays size={18} color={colors.primary} />
+                <View style={[styles.cardIconChip, { backgroundColor: colors.primaryDark + '1F' }]}>
+                  <CalendarDays size={16} color={colors.primaryDark} />
+                </View>
                 <Text style={styles.topCardTitle}>{copy.publicHealthDays}</Text>
               </View>
               <View style={styles.phdMonthPill}>
@@ -783,10 +728,9 @@ export default function DashboardScreen() {
               </View>
               {todayDays.length > 0 ? (
                 todayDays.map((item) => (
-                  <TouchableOpacity
+                  <PressableScale
                     key={`today-${item.month}-${item.day}-${item.title}`}
                     style={styles.phdTodayCard}
-                    activeOpacity={0.82}
                     onPress={() => {
                       router.push({
                         pathname: '/public-health-day',
@@ -802,7 +746,7 @@ export default function DashboardScreen() {
                       </View>
                     )}
                     <ChevronRight size={14} color={colors.primary} />
-                  </TouchableOpacity>
+                  </PressableScale>
                 ))
               ) : (
                 <Text style={styles.emptyTopText}>{copy.noToday}</Text>
@@ -828,10 +772,10 @@ export default function DashboardScreen() {
             {/* Month events */}
             {visibleOtherMonthDays.length > 0 ? (
               visibleOtherMonthDays.map((item) => (
-                <TouchableOpacity
+                <PressableScale
                   key={`month-${selectedMonthName}-${item.month}-${item.day}-${item.title}`}
                   style={styles.phdEventRow}
-                  activeOpacity={0.82}
+                  activeScale={0.98}
                   onPress={() => {
                     router.push({
                       pathname: '/public-health-day',
@@ -849,7 +793,7 @@ export default function DashboardScreen() {
                     </View>
                   )}
                   <ChevronRight size={14} color={colors.textSecondary} />
-                </TouchableOpacity>
+                </PressableScale>
               ))
             ) : (
               <Text style={styles.emptyTopText}>{copy.noMonthDays}</Text>
@@ -883,30 +827,27 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </AnimatedEntrance>
           ) : null}
 
-          {featureSettings.quoteCard ? (
-          <View style={[styles.topCard, styles.quoteCard]}>
-            <View style={styles.topCardTitleRow}>
-              <Sparkles size={18} color={colors.secondary} />
-              <Text style={styles.topCardTitle}>{copy.quoteTitle}</Text>
-            </View>
-            <Text style={styles.quoteText}>&quot;{dailyQuote?.quote || copy.quoteFallback}&quot;</Text>
-            <Text style={styles.quoteAuthor}>- {dailyQuote?.author || copy.unknown}</Text>
-          </View>
-          ) : null}
         </ScrollView>
 
-        {isDrawerOpen ? <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={closeDrawer} /> : null}
-        <Animated.View style={[styles.drawer, { width: drawerWidth, transform: [{ translateX: drawerTranslateX }] }]}> 
-          <View style={styles.drawerHeaderCard}> 
-            <View style={styles.drawerLogoRow}> 
-              <Image source={require('@/assets/images/logo.png')} style={styles.drawerLogo} /> 
-              <Text style={styles.drawerAppName}>Public Health Updates</Text> 
-            </View> 
-          </View> 
-          <ScrollView contentContainerStyle={styles.drawerContent}> 
-            <Text style={styles.drawerSectionLabel}>Menus</Text> 
+        {isDrawerOpen ? (
+          <Animated.View style={[styles.drawerBackdrop, { opacity: drawerBackdropOpacity }]}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeDrawer} />
+          </Animated.View>
+        ) : null}
+        <Animated.View style={[styles.drawer, { width: drawerWidth, transform: [{ translateX: drawerTranslateX }] }]}>
+          <GradientHero rounded={false} particles={false} style={styles.drawerHeaderCard}>
+            <SafeAreaView edges={['top']} style={styles.drawerLogoRow}>
+              <View style={styles.drawerLogoRing}>
+                <Image source={require('@/assets/images/logo.png')} style={styles.drawerLogo} />
+              </View>
+              <Text style={styles.drawerAppName}>Public Health Updates</Text>
+            </SafeAreaView>
+          </GradientHero>
+          <ScrollView contentContainerStyle={styles.drawerContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.drawerSectionLabel}>Menus</Text>
             {homeMenuSections.map((section) => (
               <View key={`drawer-section-${section.title}`} style={styles.drawerSectionBlock}>
                 <Text style={styles.drawerGroupTitle}>{section.title}</Text>
@@ -915,29 +856,27 @@ export default function DashboardScreen() {
                   if (!menu) return null;
                   const Icon = menu.icon;
                   return (
-                    <TouchableOpacity 
-                      key={`drawer-${menu.key}`} 
-                      style={styles.drawerItem} 
-                      onPress={() => { 
-                        closeDrawer(); 
-                        menu.onPress(); 
-                      }} 
-                    > 
-                      <View style={[styles.drawerIconWrap, { backgroundColor: menu.color + '1A' }]}> 
-                        <Icon size={18} color={menu.color} /> 
-                      </View> 
-                      <View style={styles.drawerItemBody}> 
-                        <Text style={styles.drawerItemText}>{menu.title}</Text> 
-                        <Text style={styles.drawerItemSubtext}>{menu.description}</Text> 
-                      </View> 
-                      <ChevronRight size={16} color={colors.textLight} /> 
-                    </TouchableOpacity>
+                    <PressableScale
+                      key={`drawer-${menu.key}`}
+                      style={styles.drawerItem}
+                      activeScale={0.98}
+                      onPress={() => { closeDrawer(); menu.onPress(); }}
+                    >
+                      <View style={[styles.drawerIconWrap, { backgroundColor: menu.color + '1A' }]}>
+                        <Icon size={18} color={menu.color} />
+                      </View>
+                      <View style={styles.drawerItemBody}>
+                        <Text style={styles.drawerItemText}>{menu.title}</Text>
+                        <Text style={styles.drawerItemSubtext} numberOfLines={1}>{menu.description}</Text>
+                      </View>
+                      <ChevronRight size={16} color={colors.textLight} />
+                    </PressableScale>
                   );
                 })}
               </View>
-            ))} 
-          </ScrollView> 
-        </Animated.View> 
+            ))}
+          </ScrollView>
+        </Animated.View>
       </View>
 
       <Modal
@@ -948,6 +887,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
+            <View style={styles.modalGrabber} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Health Tip Details</Text>
               <TouchableOpacity style={styles.modalCloseButton} onPress={closeTipDetails}>
@@ -1000,37 +940,6 @@ export default function DashboardScreen() {
 }
 
 const styles = createThemedStyles((colors) => ({
-  drawerLogoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-    justifyContent: 'center',
-  },
-  drawerLogo: {
-    width: 44,
-    height: 44,
-    resizeMode: 'contain',
-  },
-  drawerAppName: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  hideButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1043,92 +952,198 @@ const styles = createThemedStyles((colors) => ({
   },
   content: {
     padding: 0,
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
-  heroBanner: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 28,
+  // Hero -------------------------------------------------------------------
+  hero: {
+    paddingBottom: spacing.xxl,
   },
-  logoContainer: {
+  heroSafe: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  heroIconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF22',
+    borderWidth: 1,
+    borderColor: '#FFFFFF33',
+  },
+  heroBrandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF22',
+    borderColor: '#FFFFFF33',
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroBrandPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  heroCenter: {
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+  },
+  logoRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF22',
+    borderWidth: 1,
+    borderColor: '#FFFFFF3D',
+    marginBottom: spacing.md,
+  },
+  logoRingInner: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFEE',
   },
   heroLogo: {
-    width: 80,
-    height: 80,
+    width: 54,
+    height: 54,
     resizeMode: 'contain',
-  },
-  heroContent: {
-    alignItems: 'center',
   },
   heroTitle: {
     color: '#ffffff',
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
-    marginBottom: 4,
+    marginBottom: 6,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   heroSubtitle: {
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
-    opacity: 0.95,
+    opacity: 0.92,
+    lineHeight: 19,
+    paddingHorizontal: spacing.lg,
   },
-  topBarRow: {
+  heroHighlights: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  heroDayCard: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: '#FFFFFF1F',
+    borderWidth: 1,
+    borderColor: '#FFFFFF3D',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  menuButton: {
-    flexDirection: 'row',
+  heroDayIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.sm,
     alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF2E',
   },
-  menuButtonLabel: {
-    color: colors.text,
+  heroDayBody: {
+    flex: 1,
+    gap: 2,
+  },
+  heroDayBadge: {
+    color: '#FFFFFFCC',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  heroDayTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 19,
+  },
+  heroQuoteCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    backgroundColor: '#FFFFFF17',
+    borderWidth: 1,
+    borderColor: '#FFFFFF33',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  heroQuoteIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF2E',
+    marginTop: 2,
+  },
+  heroQuoteBody: {
+    flex: 1,
+    gap: 3,
+  },
+  heroQuoteText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    lineHeight: 19,
+    fontStyle: 'italic',
+    fontWeight: '500',
+  },
+  heroQuoteAuthor: {
+    color: '#FFFFFFCC',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Section shared ---------------------------------------------------------
+  hideButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   moreButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: radii.md,
+    paddingVertical: 12,
     marginTop: 4,
+    ...elevation('sm'),
   },
   moreButtonText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '600' as const,
+    fontWeight: '700',
   },
   newsSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  newsSectionTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 4,
-    letterSpacing: 0.1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
   },
   newsLoadingContainer: {
     paddingVertical: 20,
@@ -1137,103 +1152,112 @@ const styles = createThemedStyles((colors) => ({
   newsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 13,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    overflow: 'hidden',
+    ...elevation('sm'),
+  },
+  newsAccentRail: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: radii.md,
+    borderBottomLeftRadius: radii.md,
   },
   newsCardContent: {
     flex: 1,
     gap: 4,
+    paddingLeft: 4,
   },
   newsCardTitle: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 19,
   },
   newsCardDate: {
     color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '500',
   },
+  // Top cards --------------------------------------------------------------
+  cardOuter: {
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.sm,
+  },
   topCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
-    padding: 12,
-    gap: 8,
-    marginHorizontal: 16,
-    marginVertical: 8,
+    borderRadius: radii.lg,
+    padding: 16,
+    gap: spacing.sm,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  cardIconChip: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   highlightCard: {
-    borderColor: colors.primary + '66',
-    backgroundColor: colors.primary + '0F',
+    borderColor: colors.primary + '55',
+    backgroundColor: colors.primary + '0D',
   },
   quoteCard: {
-    borderColor: colors.secondary + '55',
-    backgroundColor: colors.secondary + '0D',
+    borderColor: colors.secondary + '4D',
+  },
+  quoteBg: {
+    ...({ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as const),
   },
   publicHealthCard: {
-    borderColor: colors.primaryDark + '55',
-    backgroundColor: colors.primaryDark + '0D',
+    borderColor: colors.primaryDark + '4D',
+    backgroundColor: colors.primaryDark + '0A',
   },
   topCardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: spacing.sm,
   },
   topCardTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   tipText: {
     color: colors.text,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
+  },
+  tipHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   tipTapHint: {
     color: colors.primaryDark,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   quoteText: {
     color: colors.text,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 23,
     fontStyle: 'italic',
   },
   quoteAuthor: {
     color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
-  },
-  publicHealthToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  todayHeading: {
-    color: colors.primaryDark,
-    fontSize: 12,
     fontWeight: '700',
-    marginTop: 2,
   },
   monthListHeaderRow: {
     marginTop: 4,
@@ -1242,9 +1266,9 @@ const styles = createThemedStyles((colors) => ({
     justifyContent: 'space-between',
   },
   showHideButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1254,74 +1278,21 @@ const styles = createThemedStyles((colors) => ({
     fontSize: 12,
     fontWeight: '700',
   },
-  topListItem: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 8,
-    gap: 2,
-  },
-  topListTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
   emptyTopText: {
     color: colors.textSecondary,
     fontSize: 12,
     fontStyle: 'italic',
   },
-  monthListToggle: {
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: colors.surface,
-  },
-  monthListArrowWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary + '20',
-  },
-  monthNavRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10,
-  },
-  monthNavButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  monthNavButtonText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  // Public Health Days redesign
+  // Public Health Days -----------------------------------------------------
   phdHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   phdMonthPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     backgroundColor: colors.primary + '1A',
     borderWidth: 1,
     borderColor: colors.primary + '30',
@@ -1329,7 +1300,7 @@ const styles = createThemedStyles((colors) => ({
   phdMonthPillText: {
     color: colors.primary,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   phdSection: {
     gap: 6,
@@ -1337,13 +1308,13 @@ const styles = createThemedStyles((colors) => ({
   },
   phdTodayBadge: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 9,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
     paddingVertical: 3,
     backgroundColor: colors.primary,
   },
   phdTodayBadgeText: {
-    color: colors.surface,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
@@ -1351,11 +1322,11 @@ const styles = createThemedStyles((colors) => ({
   phdTodayCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: colors.primary + '12',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    borderRadius: radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     borderWidth: 1,
     borderColor: colors.primary + '35',
   },
@@ -1370,19 +1341,19 @@ const styles = createThemedStyles((colors) => ({
     flex: 1,
     color: colors.text,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     lineHeight: 18,
   },
   phdWeekBadge: {
     borderRadius: 6,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     backgroundColor: colors.primaryDark + '25',
   },
   phdWeekBadgeText: {
     color: colors.primaryDark,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   phdMonthListLabel: {
     color: colors.textSecondary,
@@ -1397,15 +1368,15 @@ const styles = createThemedStyles((colors) => ({
   phdEventRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 7,
+    gap: spacing.md,
+    paddingVertical: 9,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   phdDateBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1429,8 +1400,8 @@ const styles = createThemedStyles((colors) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
-    gap: 8,
+    marginTop: 8,
+    gap: spacing.sm,
   },
   phdNavButton: {
     flexDirection: 'row',
@@ -1439,14 +1410,19 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  monthNavButtonText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
   },
   phdNavTodayBtn: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: radii.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     backgroundColor: colors.primary + '18',
     borderWidth: 1,
     borderColor: colors.primary + '40',
@@ -1454,85 +1430,69 @@ const styles = createThemedStyles((colors) => ({
   phdNavTodayBtnText: {
     color: colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   phdNavSpacer: {
     flex: 1,
   },
+  // Menu grid --------------------------------------------------------------
   menuGridSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  sectionSeparator: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.lg,
   },
   sectionList: {
-    gap: 14,
+    gap: spacing.xl,
   },
   sectionBlock: {
-    gap: 10,
-  },
-  sectionLabelBlock: {
-    gap: 2,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-    paddingLeft: 10,
-    borderRadius: 2,
-  },
-  sectionHeading: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  sectionSubheading: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
+    gap: spacing.md,
   },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: spacing.md,
+  },
+  gridCardWrap: {
+    width: '48%',
   },
   gridCard: {
-    width: '48%',
+    width: '100%',
     borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 18,
+    borderRadius: radii.lg,
+    paddingVertical: 20,
     paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  gridCardBg: {
+    ...({ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as const),
   },
   gridIconContainer: {
     width: 56,
     height: 56,
-    borderRadius: 99,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   gridCardTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
+  // Drawer -----------------------------------------------------------------
   drawerBackdrop: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#00000044',
+    backgroundColor: '#00000066',
   },
   drawer: {
     position: 'absolute',
@@ -1542,65 +1502,77 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.surface,
     borderRightWidth: 1,
     borderRightColor: colors.border,
-    paddingTop: 48,
-    paddingHorizontal: 14,
+    ...elevation('xl'),
   },
   drawerHeaderCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.primary + '12',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 12,
+    paddingBottom: spacing.lg,
   },
-  drawerTitle: {
-    color: colors.text,
-    fontSize: 18,
+  drawerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  drawerLogoRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFEE',
+  },
+  drawerLogo: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  drawerAppName: {
+    color: '#FFFFFF',
+    fontSize: 17,
     fontWeight: '800',
-  },
-  drawerSubtitle: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 2,
+    letterSpacing: 0.2,
+    flex: 1,
   },
   drawerContent: {
-    gap: 8,
-    paddingBottom: 20,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
   },
   drawerSectionLabel: {
     color: colors.textLight,
     fontSize: 12,
-    fontWeight: '700',
-    marginTop: 6,
+    fontWeight: '800',
+    marginTop: spacing.md,
     marginBottom: 2,
+    letterSpacing: 0.4,
   },
   drawerSectionBlock: {
-    gap: 8,
+    gap: spacing.sm,
     marginBottom: 6,
   },
   drawerGroupTitle: {
     color: colors.text,
     fontSize: 14,
     fontWeight: '800',
-    marginTop: 8,
+    marginTop: spacing.sm,
     marginBottom: 2,
   },
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     backgroundColor: colors.background,
   },
   drawerIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
+    width: 36,
+    height: 36,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1611,82 +1583,93 @@ const styles = createThemedStyles((colors) => ({
   drawerItemText: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   drawerItemSubtext: {
     color: colors.textSecondary,
     fontSize: 11,
   },
+  // Modal ------------------------------------------------------------------
   modalBackdrop: {
     flex: 1,
-    backgroundColor: '#00000066',
+    backgroundColor: '#00000077',
     justifyContent: 'flex-end',
   },
   modalCard: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
     maxHeight: '82%',
+    ...elevation('xl'),
+  },
+  modalGrabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    marginTop: 10,
+    marginBottom: 2,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 10,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   modalTitle: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   modalCloseButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   modalCloseText: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   modalContent: {
-    padding: 14,
-    gap: 8,
-    paddingBottom: 24,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    paddingBottom: spacing.xxl,
   },
   modalTip: {
     color: colors.text,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   modalSectionTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     marginTop: 6,
   },
   modalInfoText: {
     color: colors.textSecondary,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   modalBullet: {
     color: colors.textSecondary,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   modalLoader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     paddingVertical: 8,
   },
   modalErrorText: {

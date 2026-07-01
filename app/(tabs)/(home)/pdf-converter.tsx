@@ -15,6 +15,7 @@ import {
   Scissors,
 } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 
 const TOOL_COLOR = '#DC2626';
 
@@ -135,8 +136,9 @@ export default function PdfConverterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.heroCard, { borderColor: TOOL_COLOR + '33', backgroundColor: TOOL_COLOR + '0D' }]}>
+      <AuroraBackground tint={TOOL_COLOR} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <AnimatedEntrance from="up" style={[styles.heroCard, { borderColor: TOOL_COLOR + '33', backgroundColor: TOOL_COLOR + '0D' }]}>
           <View style={[styles.heroIcon, { backgroundColor: TOOL_COLOR }]}>
             <FileText size={22} color="#fff" />
           </View>
@@ -144,7 +146,7 @@ export default function PdfConverterScreen() {
           <Text style={styles.subtitle}>
             Merge, split, compress, add page numbers, watermark, and unlock PDF files — all processed on your device with no internet required.
           </Text>
-        </View>
+        </AnimatedEntrance>
 
         <View style={styles.sectionList}>
           {PDF_SECTIONS.map((section) => (
@@ -154,14 +156,14 @@ export default function PdfConverterScreen() {
                 <Text style={styles.groupSubtitle}>{section.subtitle}</Text>
               </View>
               <View style={styles.cardList}>
-                {section.tools.map((tool) => {
+                {section.tools.map((tool, i) => {
                   const Icon = tool.icon;
                   return (
-                    <TouchableOpacity
-                      key={tool.key}
+                    <AnimatedEntrance key={tool.key} index={i} from="up">
+                    <PressableScale
                       style={[styles.toolCard, { borderColor: TOOL_COLOR + '33' }]}
                       onPress={() => handleToolPress(tool)}
-                      activeOpacity={0.88}
+                      haptic
                     >
                       <View style={[styles.toolIconWrap, { backgroundColor: TOOL_COLOR + '15' }]}>
                         <Icon size={20} color={TOOL_COLOR} />
@@ -170,8 +172,9 @@ export default function PdfConverterScreen() {
                         <Text style={styles.toolTitle}>{tool.title}</Text>
                         <Text style={styles.toolDescription}>{tool.description}</Text>
                       </View>
-                      <ArrowRight size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                      <ArrowRight size={18} color={TOOL_COLOR} />
+                    </PressableScale>
+                    </AnimatedEntrance>
                   );
                 })}
               </View>

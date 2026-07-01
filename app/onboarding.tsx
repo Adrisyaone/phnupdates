@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import {
   User,
   Ruler,
@@ -814,6 +815,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
+      <AuroraBackground />
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
@@ -826,7 +828,7 @@ export default function OnboardingScreen() {
             keyboardShouldPersistTaps="handled"
           >
             {isProfileSection && (
-              <View style={styles.header}>
+              <AnimatedEntrance from="up" style={styles.header}>
                 <View style={styles.logoWrap}>
                   <Image
                     source={require('@/assets/images/logo.png')}
@@ -836,7 +838,7 @@ export default function OnboardingScreen() {
                 </View>
                 <Text style={styles.headerTitle}>{currentStepConfig.title}</Text>
                 <Text style={styles.headerAppTag}>{currentStepConfig.subtitle}</Text>
-              </View>
+              </AnimatedEntrance>
             )}
 
             <View style={styles.progressBar}>
@@ -845,30 +847,32 @@ export default function OnboardingScreen() {
               ))}
             </View>
 
-            {renderStepContent()}
+            <AnimatedEntrance key={step} from="right" distance={26}>
+              {renderStepContent()}
+            </AnimatedEntrance>
           </ScrollView>
 
           {showFooter && (
             <View style={styles.footer}>
               {isIntroStep && !isLastStep && (
-                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+                <PressableScale style={styles.skipButton} onPress={handleSkip}>
                   <Text style={styles.skipButtonText}>Skip</Text>
-                </TouchableOpacity>
+                </PressableScale>
               )}
               {isProfileSection && step > 6 && (
-                <TouchableOpacity style={styles.backButton} onPress={prevStep}>
+                <PressableScale style={styles.backButton} onPress={prevStep}>
                   <Text style={styles.backButtonText}>Back</Text>
-                </TouchableOpacity>
+                </PressableScale>
               )}
               {isSecurityStep && securityDone && (
                 <View />
               )}
-              <TouchableOpacity style={[styles.nextButton, (isIntroStep && !isLastStep) ? {} : styles.nextButtonFull]} onPress={nextStep}>
+              <PressableScale style={[styles.nextButton, (isIntroStep && !isLastStep) ? {} : styles.nextButtonFull]} onPress={nextStep} haptic>
                 <Text style={styles.nextButtonText}>
                   {isLastStep ? "Let's Go!" : 'Next'}
                 </Text>
                 <ChevronRight size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
         </KeyboardAvoidingView>

@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { BookOpen, Facebook, Globe, Mail, Phone, ChevronDown, ChevronUp, GraduationCap, Monitor, Heart } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 
 const PUBLICATIONS = [
   'Adhikari, B., Poudel, L., Thapa, T. B., Neupane, D., Maharjan, P., Hagaman, A., ... & Shrestha, A. (2022). Prevalence and factors associated with depression, anxiety, and stress symptoms among home isolated COVID-19 patients in Western Nepal. Dialogues in Health, 100090.',
@@ -48,24 +50,30 @@ export default function AboutUsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Hero */}
-        <View style={styles.heroCard}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logoImage}
-            contentFit="contain"
-          />
-          <Text style={styles.heroTitle}>Public Health Nepal Updates</Text>
-          <Text style={styles.heroHandle}>phnupdates.com</Text>
-          <Text style={styles.heroBody}>
-            A blog platform dedicated to supporting public health professionals, students, and researchers across Nepal and beyond.
-          </Text>
-        </View>
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.logoRing}>
+              <Image
+                source={require('@/assets/images/logo.png')}
+                style={styles.logoImage}
+                contentFit="contain"
+              />
+            </View>
+            <Text style={styles.heroTitle}>Public Health Nepal Updates</Text>
+            <Text style={styles.heroHandle}>phnupdates.com</Text>
+            <Text style={styles.heroBody}>
+              A blog platform dedicated to supporting public health professionals, students, and researchers across Nepal and beyond.
+            </Text>
+          </View>
+        </GradientHero>
 
+        <View style={styles.cardsWrap}>
         {/* About Author */}
-        <View style={styles.card}>
+        <AnimatedEntrance index={0} from="up"><View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardIconWrap}>
               <GraduationCap size={16} color={colors.primary} />
@@ -78,10 +86,10 @@ export default function AboutUsScreen() {
           <Text style={styles.helpNote}>
             Available to help with public health research, data analysis, and related queries.
           </Text>
-        </View>
+        </View></AnimatedEntrance>
 
         {/* Publications */}
-        <View style={styles.card}>
+        <AnimatedEntrance index={1} from="up"><View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardIconWrap}>
               <BookOpen size={16} color={colors.primary} />
@@ -99,14 +107,14 @@ export default function AboutUsScreen() {
               <Text style={styles.pubText}>{item}</Text>
             </View>
           ))}
-          <TouchableOpacity style={styles.expandBtn} onPress={() => setPubExpanded((v) => !v)}>
+          <PressableScale style={styles.expandBtn} onPress={() => setPubExpanded((v) => !v)}>
             {pubExpanded ? <ChevronUp size={14} color={colors.primary} /> : <ChevronDown size={14} color={colors.primary} />}
             <Text style={styles.expandBtnText}>{pubExpanded ? 'Show Less' : `Show ${PUBLICATIONS.length - 3} More`}</Text>
-          </TouchableOpacity>
-        </View>
+          </PressableScale>
+        </View></AnimatedEntrance>
 
         {/* Computer Skills */}
-        <View style={styles.card}>
+        <AnimatedEntrance index={2} from="up"><View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardIconWrap}>
               <Monitor size={16} color={colors.primary} />
@@ -121,10 +129,10 @@ export default function AboutUsScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </View></AnimatedEntrance>
 
         {/* Hobbies */}
-        <View style={styles.card}>
+        <AnimatedEntrance index={3} from="up"><View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardIconWrap}>
               <Heart size={16} color={colors.error} />
@@ -138,10 +146,10 @@ export default function AboutUsScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </View></AnimatedEntrance>
 
         {/* Contact */}
-        <View style={styles.card}>
+        <AnimatedEntrance index={4} from="up"><View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardIconWrap}>
               <Mail size={16} color={colors.primary} />
@@ -157,10 +165,11 @@ export default function AboutUsScreen() {
           {SOCIAL_LINKS.map((link) => {
             const Icon = link.icon;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={link.url}
                 style={styles.linkRow}
                 onPress={() => { void openExternal(link.url); }}
+                haptic
               >
                 <View style={[styles.linkIcon, { backgroundColor: link.color + '18' }]}>
                   <Icon size={15} color={link.color} />
@@ -169,9 +178,10 @@ export default function AboutUsScreen() {
                 <View style={styles.linkArrow}>
                   <Text style={styles.linkArrowText}>↗</Text>
                 </View>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
+        </View></AnimatedEntrance>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -184,40 +194,51 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
     paddingBottom: 32,
-    gap: 12,
+  },
+  cardsWrap: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
 
   // Hero
-  heroCard: {
-    backgroundColor: colors.primary + '12',
-    borderWidth: 1.5,
-    borderColor: colors.primary + '35',
-    borderRadius: 20,
-    padding: 22,
+  hero: {
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: 6,
+  },
+  logoRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFEE',
+    marginBottom: spacing.sm,
   },
   logoImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 18,
-    marginBottom: 4,
+    width: 72,
+    height: 72,
+    borderRadius: 16,
   },
   heroTitle: {
-    color: colors.text,
-    fontSize: 20,
+    color: '#FFFFFF',
+    fontSize: 21,
     fontWeight: '800',
     textAlign: 'center',
   },
   heroHandle: {
-    color: colors.primary,
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+    opacity: 0.95,
   },
   heroBody: {
-    color: colors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
@@ -229,9 +250,10 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     padding: 16,
     gap: 10,
+    ...elevation('sm'),
   },
   cardHeader: {
     flexDirection: 'row',

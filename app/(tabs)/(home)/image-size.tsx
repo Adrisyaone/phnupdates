@@ -8,6 +8,7 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { useSettings } from '@/contexts/SettingsContext';
 
 type ImageSizeOption = {
@@ -184,8 +185,9 @@ export default function ImageSizeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <Stack.Screen options={{ title: 'Image Size' }} />
+      <AuroraBackground />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.heroCard}>
+        <AnimatedEntrance from="up" style={styles.heroCard}>
           <View style={styles.heroIconWrap}>
             <ImagePlus size={22} color={colors.primary} />
           </View>
@@ -193,18 +195,18 @@ export default function ImageSizeScreen() {
           <Text style={styles.heroSubtitle}>
             Choose the crop or generation size before you edit or process an image. Current selection: {currentLabel}.
           </Text>
-        </View>
+        </AnimatedEntrance>
 
         <View style={styles.list}>
-          {IMAGE_SIZE_OPTIONS.map((option) => {
+          {IMAGE_SIZE_OPTIONS.map((option, i) => {
             const Icon = option.icon;
             const active = featureSettings.imageSizePreset === option.preset;
             const isCustom = option.preset === 'custom';
             return (
-              <View key={option.preset}>
-                <TouchableOpacity
+              <AnimatedEntrance key={option.preset} index={i} from="up">
+                <PressableScale
                   style={[styles.optionCard, active && styles.optionCardActive, isCustom && active && styles.optionCardCustomActive]}
-                  activeOpacity={0.88}
+                  activeScale={0.99}
                   onPress={() => {
                     if (isCustom) {
                       void updateFeatureSettings({
@@ -233,7 +235,7 @@ export default function ImageSizeScreen() {
                       <Text style={styles.optionBadgeText}>{option.width}×{option.height}</Text>
                     </View>
                   )}
-                </TouchableOpacity>
+                </PressableScale>
 
                 {isCustom && active && (
                   <View style={styles.customInputsRow}>
@@ -268,7 +270,7 @@ export default function ImageSizeScreen() {
                     </View>
                   </View>
                 )}
-              </View>
+              </AnimatedEntrance>
             );
           })}
         </View>

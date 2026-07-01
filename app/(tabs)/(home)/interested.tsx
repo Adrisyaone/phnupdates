@@ -4,8 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import { MinusCircle } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MinusCircle, Star } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { getDashboardMenu, getMenuThemeColor } from '@/constants/blogMenus';
 import { getInterestedPosts, InterestedPost, removeInterestedPost } from '@/services/interestedPosts';
 
@@ -88,37 +91,53 @@ export default function InterestedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <AuroraBackground tint={menuColor} />
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.card, menu ? { borderColor: menuColor + '55', backgroundColor: menuColor + '0A' } : null]}
-            onPress={() => openPost(item)}
-          >
-            {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
-            ) : null}
-            <View style={styles.headerRow}>
-              <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-              <TouchableOpacity
-                onPress={(e: any) => {
-                  e?.stopPropagation?.();
-                  void removePost(item.id);
-                }}
-                style={styles.removeBtn}
-              >
-                <MinusCircle size={18} color={colors.error} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.meta}>Published: {formatDate(item.published)}</Text>
-            <Text style={styles.excerpt} numberOfLines={3}>{item.excerpt}</Text>
-          </TouchableOpacity>
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={menuColor} />}
+        renderItem={({ item, index }) => (
+          <AnimatedEntrance index={Math.min(index, 8)} from="up">
+            <PressableScale
+              style={[styles.card, { borderColor: menuColor + '33' }]}
+              onPress={() => openPost(item)}
+              activeScale={0.99}
+            >
+              <View style={[styles.cardRail, { backgroundColor: menuColor }]} />
+              {item.imageUrl ? (
+                <View style={styles.cardImageWrap}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" transition={200} />
+                  <LinearGradient colors={['#00000000', '#00000055']} style={styles.cardImageScrim} />
+                </View>
+              ) : null}
+              <View style={styles.cardBody}>
+                <View style={styles.headerRow}>
+                  <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+                  <PressableScale
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      void removePost(item.id);
+                    }}
+                    style={styles.removeBtn}
+                    haptic
+                    accessibilityLabel="Remove from interested"
+                  >
+                    <MinusCircle size={20} color={colors.error} />
+                  </PressableScale>
+                </View>
+                <Text style={styles.meta}>Published: {formatDate(item.published)}</Text>
+                <Text style={styles.excerpt} numberOfLines={3}>{item.excerpt}</Text>
+              </View>
+            </PressableScale>
+          </AnimatedEntrance>
         )}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
+            <View style={[styles.emptyIcon, { backgroundColor: menuColor + '18' }]}>
+              <Star size={26} color={menuColor} />
+            </View>
             <Text style={styles.emptyTitle}>{menu ? `No interested posts in ${menu.title} yet.` : 'No interested posts yet.'}</Text>
             <Text style={styles.emptySubtitle}>
               {menu
@@ -138,35 +157,57 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 2,
-    paddingBottom: 20,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
   },
   card: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radii.lg,
     backgroundColor: colors.surface,
-    padding: 12,
-    gap: 4,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  cardRail: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    zIndex: 2,
+  },
+  cardImageWrap: {
+    overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
-    height: 170,
-    borderRadius: 10,
-    marginBottom: 4,
+    height: 180,
     backgroundColor: colors.surfaceAlt,
+  },
+  cardImageScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
+  },
+  cardBody: {
+    padding: 14,
+    paddingLeft: 16,
+    gap: 4,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: spacing.sm,
   },
   title: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    lineHeight: 22,
     flex: 1,
   },
   removeBtn: {
@@ -175,6 +216,7 @@ const styles = createThemedStyles((colors) => ({
   meta: {
     color: colors.textSecondary,
     fontSize: 12,
+    fontWeight: '600',
   },
   excerpt: {
     color: colors.textSecondary,
@@ -183,17 +225,28 @@ const styles = createThemedStyles((colors) => ({
   },
   emptyWrap: {
     alignItems: 'center',
-    paddingVertical: 56,
-    gap: 4,
+    paddingVertical: 60,
+    gap: spacing.sm,
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   emptyTitle: {
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   emptySubtitle: {
     color: colors.textSecondary,
     fontSize: 13,
     textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
 }));

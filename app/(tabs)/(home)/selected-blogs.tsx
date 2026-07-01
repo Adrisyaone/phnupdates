@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { MinusCircle, Search, Sparkles } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { getInterestedPosts, InterestedPost, removeInterestedPost } from '@/services/interestedPosts';
 
@@ -112,22 +115,26 @@ export default function SelectedBlogsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <AuroraBackground />
       <FlatList
         data={filteredItems}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
         ListHeaderComponent={(
           <View style={styles.headerWrap}>
-            <View style={styles.heroCard}>
-              <View style={styles.heroIcon}>
-                <Sparkles size={22} color={colors.surface} />
+            <GradientHero rounded style={styles.hero}>
+              <View style={styles.heroRow}>
+                <View style={styles.heroIcon}>
+                  <Sparkles size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.heroTextWrap}>
+                  <Text style={styles.heroTitle}>Selected Blogs</Text>
+                  <Text style={styles.heroSubtitle}>Browse all selected blogs grouped by category.</Text>
+                </View>
               </View>
-              <View style={styles.heroTextWrap}>
-                <Text style={styles.heroTitle}>Selected Blogs</Text>
-                <Text style={styles.heroSubtitle}>Browse all selected blogs grouped by category.</Text>
-              </View>
-            </View>
+            </GradientHero>
 
             <View style={styles.filterRow}>
               {CATEGORY_ORDER.map((category) => {
@@ -147,11 +154,11 @@ export default function SelectedBlogsScreen() {
                   : getMenuThemeColor(category.key);
 
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={category.key}
                     style={[
                       styles.filterChip,
-                      { borderColor: chipColor },
+                      { borderColor: chipColor + '80' },
                       active && { backgroundColor: chipColor, borderColor: chipColor },
                     ]}
                     onPress={() => setSelectedCategory(category.key)}
@@ -162,7 +169,7 @@ export default function SelectedBlogsScreen() {
                     <Text style={[styles.filterCountText, active && styles.filterChipTextActive]}>
                       {count}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>
@@ -174,37 +181,51 @@ export default function SelectedBlogsScreen() {
           const accentColor = categoryKey === 'uncategorized' ? colors.primary : getMenuThemeColor(categoryKey);
 
           return (
-            <TouchableOpacity
-              style={[styles.card, { borderColor: accentColor + '55', backgroundColor: accentColor + '0A' }]}
+            <AnimatedEntrance from="up">
+            <PressableScale
+              style={[styles.card, { borderColor: accentColor + '33' }]}
               onPress={() => openPost(item)}
-              activeOpacity={0.85}
+              activeScale={0.99}
             >
-              {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.cardImage} /> : null}
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.cardTitleWrap}>
-                  <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                  <Text style={[styles.categoryLabel, { color: accentColor }]}>
-                    {categoryMenu?.title || 'Other'}
-                  </Text>
+              <View style={[styles.cardRail, { backgroundColor: accentColor }]} />
+              {item.imageUrl ? (
+                <View style={styles.cardImageWrap}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+                  <LinearGradient colors={['#00000000', '#00000055']} style={styles.cardImageScrim} />
                 </View>
-                <TouchableOpacity
-                  onPress={(e: any) => {
-                    e?.stopPropagation?.();
-                    void removePost(item.id);
-                  }}
-                  style={styles.removeBtn}
-                >
-                  <MinusCircle size={18} color={colors.error} />
-                </TouchableOpacity>
+              ) : null}
+              <View style={styles.cardBody}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardTitleWrap}>
+                    <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+                    <Text style={[styles.categoryLabel, { color: accentColor }]}>
+                      {categoryMenu?.title || 'Other'}
+                    </Text>
+                  </View>
+                  <PressableScale
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      void removePost(item.id);
+                    }}
+                    style={styles.removeBtn}
+                    haptic
+                    accessibilityLabel="Remove from selected"
+                  >
+                    <MinusCircle size={20} color={colors.error} />
+                  </PressableScale>
+                </View>
+                <Text style={styles.meta}>Published: {formatDate(item.published)}</Text>
+                <Text style={styles.excerpt} numberOfLines={3}>{item.excerpt}</Text>
               </View>
-              <Text style={styles.meta}>Published: {formatDate(item.published)}</Text>
-              <Text style={styles.excerpt} numberOfLines={3}>{item.excerpt}</Text>
-            </TouchableOpacity>
+            </PressableScale>
+            </AnimatedEntrance>
           );
         }}
         ListEmptyComponent={(
           <View style={styles.emptyWrap}>
-            <Search size={22} color={colors.textSecondary} />
+            <View style={styles.emptyIcon}>
+              <Search size={26} color={colors.primary} />
+            </View>
             <Text style={styles.emptyTitle}>No selected blogs yet.</Text>
             <Text style={styles.emptySubtitle}>Tap the + icon on posts in any category to add them here.</Text>
           </View>
@@ -220,55 +241,57 @@ const styles = createThemedStyles((themeColors) => ({
     backgroundColor: themeColors.background,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 22,
-    gap: 10,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
   },
   headerWrap: {
-    gap: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
   },
-  heroCard: {
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: themeColors.surface,
-    borderWidth: 1,
-    borderColor: themeColors.border,
+  hero: {
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  heroRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: themeColors.primary,
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
   },
   heroTextWrap: {
     flex: 1,
     gap: 4,
   },
   heroTitle: {
-    color: themeColors.text,
+    color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '800',
   },
   heroSubtitle: {
-    color: themeColors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 19,
   },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
   filterChip: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -290,16 +313,40 @@ const styles = createThemedStyles((themeColors) => ({
     color: themeColors.surface,
   },
   card: {
-    borderRadius: 18,
+    marginHorizontal: spacing.lg,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    padding: 14,
-    gap: 10,
+    backgroundColor: themeColors.surface,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  cardRail: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    zIndex: 2,
+  },
+  cardImageWrap: {
+    overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
-    height: 170,
-    borderRadius: 14,
+    height: 180,
     backgroundColor: themeColors.surfaceAlt,
+  },
+  cardImageScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
+  },
+  cardBody: {
+    padding: 14,
+    paddingLeft: 16,
+    gap: spacing.sm,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -333,12 +380,22 @@ const styles = createThemedStyles((themeColors) => ({
   },
   emptyWrap: {
     alignItems: 'center',
-    paddingVertical: 56,
-    gap: 6,
+    paddingVertical: 60,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: themeColors.primary + '18',
+    marginBottom: 4,
   },
   emptyTitle: {
     color: themeColors.text,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
   emptySubtitle: {

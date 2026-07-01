@@ -11,8 +11,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Briefcase, Building2, Calendar, ChevronDown, ChevronRight, Clock, ExternalLink, Mail, MapPin, X } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 
 const ALL_FILTER = 'All';
@@ -289,28 +292,39 @@ export default function JobPortalScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <AuroraBackground tint="#7C3AED" />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} colors={[colors.primary]} />}
       >
         {/* Header summary */}
-        <View style={styles.summaryBar}>
+        <LinearGradient
+          colors={['#7C3AED', '#6D28D9']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.summaryBar}
+        >
           <View style={styles.summaryItem}>
             <Text style={styles.summaryNum}>{activeCount}</Text>
             <Text style={styles.summaryLabel}>Active Jobs</Text>
           </View>
           {expiredCount > 0 ? (
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNum, { color: colors.error }]}>{expiredCount}</Text>
-              <Text style={styles.summaryLabel}>Expired</Text>
-            </View>
+            <>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryNum}>{expiredCount}</Text>
+                <Text style={styles.summaryLabel}>Expired</Text>
+              </View>
+            </>
           ) : null}
+          <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
             <Text style={styles.summaryNum}>{jobs.length}</Text>
             <Text style={styles.summaryLabel}>Total</Text>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Filters */}
         {jobTypes.length > 1 ? (
@@ -318,13 +332,13 @@ export default function JobPortalScreen() {
             <Text style={styles.filterLabel}>Job Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
               {jobTypes.map((type) => (
-                <TouchableOpacity
+                <PressableScale
                   key={type}
                   style={[styles.chip, selectedType === type && styles.chipActive]}
                   onPress={() => setSelectedType(type)}
                 >
                   <Text style={[styles.chipText, selectedType === type && styles.chipTextActive]}>{type}</Text>
-                </TouchableOpacity>
+                </PressableScale>
               ))}
             </ScrollView>
           </View>
@@ -335,13 +349,13 @@ export default function JobPortalScreen() {
             <Text style={styles.filterLabel}>Work Arrangement</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
               {arrangements.map((arr) => (
-                <TouchableOpacity
+                <PressableScale
                   key={arr}
                   style={[styles.chip, selectedArrangement === arr && styles.chipActive]}
                   onPress={() => setSelectedArrangement(arr)}
                 >
                   <Text style={[styles.chipText, selectedArrangement === arr && styles.chipTextActive]}>{arr}</Text>
-                </TouchableOpacity>
+                </PressableScale>
               ))}
             </ScrollView>
           </View>
@@ -390,15 +404,15 @@ export default function JobPortalScreen() {
         {/* Job Cards */}
         {!isLoading ? (
           <View style={styles.jobList}>
-            {filteredJobs.map((job) => {
+            {filteredJobs.map((job, jIndex) => {
               const passed = isDeadlinePassed(job.applicationDeadline);
               const deadline = formatDeadline(job.applicationDeadline);
               return (
-                <TouchableOpacity
-                  key={job.id}
+                <AnimatedEntrance key={job.id} index={Math.min(jIndex, 8)} from="up">
+                <PressableScale
                   style={[styles.jobCard, passed && styles.jobCardExpired]}
                   onPress={() => setSelectedJob(job)}
-                  activeOpacity={0.8}
+                  activeScale={0.99}
                 >
                   <View style={styles.jobCardTop}>
                     <View style={styles.jobIconWrap}>
@@ -435,7 +449,8 @@ export default function JobPortalScreen() {
                       </View>
                     ) : null}
                   </View>
-                </TouchableOpacity>
+                </PressableScale>
+                </AnimatedEntrance>
               );
             })}
           </View>
@@ -466,27 +481,32 @@ const styles = createThemedStyles((c) => ({
   },
   summaryBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    backgroundColor: c.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: 14,
+    borderRadius: radii.lg,
+    padding: 18,
+    ...elevation('md'),
   },
   summaryItem: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
+  },
+  summaryDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginVertical: 4,
+    backgroundColor: '#FFFFFF33',
   },
   summaryNum: {
-    color: c.primary,
-    fontSize: 22,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '900',
   },
   summaryLabel: {
-    color: c.textSecondary,
+    color: '#FFFFFFDD',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   filterSection: {
     gap: 6,
@@ -570,15 +590,16 @@ const styles = createThemedStyles((c) => ({
     textAlign: 'center',
   },
   jobList: {
-    gap: 10,
+    gap: spacing.md,
   },
   jobCard: {
     backgroundColor: c.surface,
     borderWidth: 1,
     borderColor: c.border,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: radii.lg,
+    padding: 14,
     gap: 8,
+    ...elevation('md'),
   },
   jobCardExpired: {
     opacity: 0.65,

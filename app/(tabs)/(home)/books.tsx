@@ -1,9 +1,12 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, glow, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 
 const BOOKS = [
   {
@@ -35,63 +38,86 @@ export default function BooksScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <BookOpen size={20} color={colors.primary} />
-            <Text style={styles.title}>Books</Text>
-          </View>
-          <Text style={styles.subtitle}>Tap a book below to open it in your browser.</Text>
-        </View>
-
-        {BOOKS.map((book) => (
-          <TouchableOpacity
-            key={book.key}
-            style={styles.bookCard}
-            onPress={() => { openBookLink(book.url, book.title); }}
-            activeOpacity={0.88}
-          >
-            <View style={styles.bookTextWrap}>
-              <Text style={styles.bookTitle}>{book.title}</Text>
-              <Text style={styles.bookDescription}>{book.description}</Text>
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroIcon}>
+              <BookOpen size={24} color="#FFFFFF" />
             </View>
-            <ExternalLink size={18} color={colors.primary} />
-          </TouchableOpacity>
-        ))}
+            <Text style={styles.title}>Books</Text>
+            <Text style={styles.subtitle}>Tap a book below to open it in your browser.</Text>
+          </View>
+        </GradientHero>
+
+        <View style={styles.list}>
+          {BOOKS.map((book, i) => (
+            <AnimatedEntrance key={book.key} index={i} from="up">
+              <PressableScale
+                style={styles.bookCard}
+                onPress={() => { openBookLink(book.url, book.title); }}
+                haptic
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.bookIcon, glow(colors.primary, 0.28)]}
+                >
+                  <BookOpen size={20} color="#FFFFFF" />
+                </LinearGradient>
+                <View style={styles.bookTextWrap}>
+                  <Text style={styles.bookTitle}>{book.title}</Text>
+                  <Text style={styles.bookDescription}>{book.description}</Text>
+                </View>
+                <ExternalLink size={18} color={colors.primary} />
+              </PressableScale>
+            </AnimatedEntrance>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = createThemedStyles((colors) => StyleSheet.create({
+const styles = createThemedStyles((colors) => ({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    gap: 12,
+    paddingBottom: spacing.xxl,
   },
-  headerCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
+  hero: {
+    paddingBottom: spacing.xl,
   },
-  headerRow: {
-    flexDirection: 'row',
+  heroInner: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  heroIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: radii.lg,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
+    marginBottom: spacing.xs,
+  },
+  list: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 20,
+    color: '#FFFFFF',
+    fontSize: 26,
     fontWeight: '800',
   },
   subtitle: {
-    color: colors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 19,
   },
@@ -99,12 +125,19 @@ const styles = createThemedStyles((colors) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: spacing.md,
+    ...elevation('md'),
+  },
+  bookIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bookTextWrap: {
     flex: 1,
@@ -113,7 +146,7 @@ const styles = createThemedStyles((colors) => StyleSheet.create({
   bookTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   bookDescription: {
     color: colors.textSecondary,

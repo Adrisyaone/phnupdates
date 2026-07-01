@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { FilePlus2, FileText, ImagePlus, NotebookPen, Plus, Trash2, X } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { AuroraBackground } from '@/components/ui';
 
 interface KeepNoteAttachment {
   id: string;
@@ -198,6 +199,7 @@ export default function KeepNotesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <AuroraBackground />
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}

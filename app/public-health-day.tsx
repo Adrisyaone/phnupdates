@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookOpen, CalendarDays, CheckCircle, Heart, Info, Lightbulb, RefreshCw, Star } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero, PressableScale } from '@/components/ui';
 import { getPublicHealthDayInfo, PublicHealthDayInfo } from '@/services/publicHealthDayInfo';
 
 export default function PublicHealthDayScreen() {
@@ -51,26 +53,31 @@ export default function PublicHealthDayScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Hero */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroIconWrap}>
-            <Heart size={30} color={colors.primary} />
-          </View>
-          <Text style={styles.heroTitle}>{eventTitle}</Text>
-          <View style={styles.heroBadgeRow}>
-            <View style={styles.dateBadge}>
-              <CalendarDays size={11} color={colors.primary} />
-              <Text style={styles.dateBadgeText}>{eventDate}</Text>
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroIconWrap}>
+              <Heart size={30} color="#FFFFFF" />
             </View>
-            <View style={[styles.typeBadge, isWeek && styles.typeBadgeWeek]}>
-              <Text style={styles.typeBadgeText}>
-                {isWeek ? 'Awareness Week' : 'Awareness Day'}
-              </Text>
+            <Text style={styles.heroTitle}>{eventTitle}</Text>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.dateBadge}>
+                <CalendarDays size={11} color="#FFFFFF" />
+                <Text style={styles.dateBadgeText}>{eventDate}</Text>
+              </View>
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>
+                  {isWeek ? 'Awareness Week' : 'Awareness Day'}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        </GradientHero>
+
+        <View style={styles.body}>
 
         {/* Loading */}
         {loading ? (
@@ -86,10 +93,10 @@ export default function PublicHealthDayScreen() {
             <Info size={32} color={colors.error} />
             <Text style={styles.errorTitle}>Something went wrong</Text>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={() => void fetchInfo()}>
+            <PressableScale style={styles.retryBtn} onPress={() => void fetchInfo()} haptic>
               <RefreshCw size={14} color="#fff" />
               <Text style={styles.retryBtnText}>Try Again</Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         ) : null}
 
@@ -97,7 +104,7 @@ export default function PublicHealthDayScreen() {
         {!loading && !error && info ? (
           <>
             {/* Theme Card */}
-            <View style={styles.themeCard}>
+            <AnimatedEntrance index={0} from="up"><View style={styles.themeCard}>
               <View style={styles.cardHeader}>
                 <Star size={15} color={colors.secondary} />
                 <Text style={styles.cardHeaderText}>Official Theme {new Date().getFullYear()}</Text>
@@ -108,28 +115,28 @@ export default function PublicHealthDayScreen() {
                   {info.currentYearThemeSourceOrg} · {info.currentYearThemeSource}
                 </Text>
               </View>
-            </View>
+            </View></AnimatedEntrance>
 
             {/* Overview */}
-            <View style={styles.card}>
+            <AnimatedEntrance index={1} from="up"><View style={styles.card}>
               <View style={styles.cardHeader}>
                 <BookOpen size={15} color={colors.primary} />
                 <Text style={styles.cardHeaderText}>Overview</Text>
               </View>
               <Text style={styles.sectionText}>{info.overview}</Text>
-            </View>
+            </View></AnimatedEntrance>
 
             {/* Why It Matters */}
-            <View style={styles.card}>
+            <AnimatedEntrance index={2} from="up"><View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Heart size={15} color={colors.error} />
                 <Text style={styles.cardHeaderText}>Why It Matters</Text>
               </View>
               <Text style={styles.sectionText}>{info.significance}</Text>
-            </View>
+            </View></AnimatedEntrance>
 
             {/* Practical Actions */}
-            <View style={styles.card}>
+            <AnimatedEntrance index={3} from="up"><View style={styles.card}>
               <View style={styles.cardHeader}>
                 <CheckCircle size={15} color={colors.success} />
                 <Text style={styles.cardHeaderText}>Practical Actions</Text>
@@ -144,10 +151,10 @@ export default function PublicHealthDayScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </View></AnimatedEntrance>
 
             {/* Key Facts */}
-            <View style={styles.card}>
+            <AnimatedEntrance index={4} from="up"><View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Lightbulb size={15} color={colors.warning} />
                 <Text style={styles.cardHeaderText}>Key Facts</Text>
@@ -162,9 +169,10 @@ export default function PublicHealthDayScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </View></AnimatedEntrance>
           </>
         ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,32 +184,36 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    gap: 12,
     paddingBottom: 32,
+  },
+  body: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
 
   // Hero
-  heroCard: {
-    backgroundColor: colors.primary + '14',
-    borderWidth: 1.5,
-    borderColor: colors.primary + '40',
-    borderRadius: 20,
-    padding: 22,
+  hero: {
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
   },
   heroIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary + '22',
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroTitle: {
-    color: colors.text,
-    fontSize: 22,
+    color: '#FFFFFF',
+    fontSize: 23,
     fontWeight: '800',
     textAlign: 'center',
     lineHeight: 30,
@@ -216,31 +228,28 @@ const styles = createThemedStyles((colors) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF26',
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
+    borderColor: '#FFFFFF40',
+    borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   dateBadgeText: {
-    color: colors.primary,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
   },
   typeBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  typeBadgeWeek: {
-    backgroundColor: colors.secondary,
-  },
   typeBadgeText: {
-    color: '#fff',
+    color: colors.primaryDark,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
   // Loading

@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Calculator, Ruler } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
+import { elevation, glow, radii, spacing } from '@/constants/theme';
+import { AnimatedEntrance, AuroraBackground, GradientHero } from '@/components/ui';
 
 function getBMICategory(bmi: number) {
   if (bmi < 18.5) return { label: 'Underweight', color: colors.warning };
@@ -31,52 +34,69 @@ export default function BMICalculatorScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <View style={styles.content}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroIcon}>
-            <Calculator size={22} color={colors.surface} />
+      <AuroraBackground />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <GradientHero rounded style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroIcon}>
+              <Calculator size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.title}>BMI Calculator</Text>
+            <Text style={styles.subtitle}>Enter height in centimeters and weight in kilograms.</Text>
           </View>
-          <Text style={styles.title}>BMI Calculator</Text>
-          <Text style={styles.subtitle}>Enter height in centimeters and weight in kilograms.</Text>
+        </GradientHero>
+
+        <View style={styles.body}>
+          <AnimatedEntrance index={0} from="up">
+            <View style={styles.inputCard}>
+              <View style={styles.inputHeader}>
+                <Ruler size={18} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Measurements</Text>
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldLabel}>Height (cm)</Text>
+                <TextInput
+                  keyboardType="numeric"
+                  value={heightCm}
+                  onChangeText={setHeightCm}
+                  placeholder="170"
+                  placeholderTextColor={colors.textSecondary}
+                  style={styles.input}
+                />
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldLabel}>Weight (kg)</Text>
+                <TextInput
+                  keyboardType="numeric"
+                  value={weightKg}
+                  onChangeText={setWeightKg}
+                  placeholder="65"
+                  placeholderTextColor={colors.textSecondary}
+                  style={styles.input}
+                />
+              </View>
+            </View>
+          </AnimatedEntrance>
+
+          <AnimatedEntrance index={1} from="up">
+            <View style={[styles.resultCard, { borderColor: category.color + '55' }]}>
+              <LinearGradient
+                colors={[category.color + '1F', category.color + '05']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.resultBg}
+              />
+              <Text style={styles.resultLabel}>Your BMI</Text>
+              <Text style={[styles.resultValue, bmi > 0 && { color: category.color }]}>{bmi > 0 ? bmi.toFixed(1) : '--'}</Text>
+              <View style={[styles.categoryPill, { backgroundColor: category.color + '22', borderColor: category.color + '55' }]}>
+                <Text style={[styles.resultCategory, { color: category.color }]}>{category.label}</Text>
+              </View>
+            </View>
+          </AnimatedEntrance>
         </View>
-
-        <View style={styles.inputCard}>
-          <View style={styles.inputHeader}>
-            <Ruler size={18} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Measurements</Text>
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Height (cm)</Text>
-            <TextInput
-              keyboardType="numeric"
-              value={heightCm}
-              onChangeText={setHeightCm}
-              placeholder="170"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.input}
-            />
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Weight (kg)</Text>
-            <TextInput
-              keyboardType="numeric"
-              value={weightKg}
-              onChangeText={setWeightKg}
-              placeholder="65"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.input}
-            />
-          </View>
-        </View>
-
-        <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>Your BMI</Text>
-          <Text style={styles.resultValue}>{bmi > 0 ? bmi.toFixed(1) : '--'}</Text>
-          <Text style={[styles.resultCategory, { color: category.color }]}>{category.label}</Text>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -87,33 +107,38 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.background,
   },
   content: {
-    flex: 1,
-    padding: 16,
-    gap: 14,
+    paddingBottom: spacing.xxl,
   },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
-    gap: 10,
+  hero: {
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  body: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFFFFF2E',
+    borderWidth: 1,
+    borderColor: '#FFFFFF40',
+    marginBottom: spacing.xs,
   },
   title: {
-    color: colors.text,
-    fontSize: 24,
+    color: '#FFFFFF',
+    fontSize: 26,
     fontWeight: '800',
   },
   subtitle: {
-    color: colors.textSecondary,
+    color: '#FFFFFFE6',
     fontSize: 13,
     lineHeight: 20,
   },
@@ -121,9 +146,10 @@ const styles = createThemedStyles((colors) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     padding: 16,
     gap: 14,
+    ...elevation('md'),
   },
   inputHeader: {
     flexDirection: 'row',
@@ -148,32 +174,46 @@ const styles = createThemedStyles((colors) => ({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     fontSize: 16,
   },
   resultCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: radii.lg,
+    padding: 22,
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
+    overflow: 'hidden',
+    ...elevation('md'),
+  },
+  resultBg: {
+    ...({ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as const),
   },
   resultLabel: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   resultValue: {
     color: colors.text,
-    fontSize: 34,
+    fontSize: 48,
     fontWeight: '900',
+    letterSpacing: -1,
+  },
+  categoryPill: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   resultCategory: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
   },
 }));
