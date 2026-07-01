@@ -3,7 +3,7 @@ import { Alert, Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, V
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowUpCircle, Bell, ChevronRight, Clock, Info, Languages, LayoutGrid, Minus, Moon, Palette, Plus, Shield, Sun, Sunrise, Sunset } from 'lucide-react-native';
+import { ArrowUpCircle, Bell, Check, ChevronRight, Clock, Info, Languages, LayoutGrid, Minus, Moon, Palette, Plus, Shield, Sun, Sunrise, Sunset } from 'lucide-react-native';
 import { colors, createThemedStyles, ThemePreference } from '@/constants/colors';
 import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { LANGUAGES, Language } from '@/constants/translations';
@@ -407,16 +407,15 @@ const styles = createThemedStyles((colors) => ({
   // Theme selector
   themeRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   themeCard: {
     flex: 1,
-    alignItems: 'center',
-    gap: 6,
+    gap: 10,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 16,
+    padding: 12,
     backgroundColor: colors.background,
     position: 'relative',
   },
@@ -424,23 +423,56 @@ const styles = createThemedStyles((colors) => ({
     borderColor: colors.primary,
     backgroundColor: colors.primary + '0E',
   },
+  themePreview: {
+    height: 74,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 8,
+    gap: 6,
+    overflow: 'hidden',
+  },
+  themePreviewBar: {
+    height: 8,
+    width: '55%',
+    borderRadius: 4,
+  },
+  themePreviewCard: {
+    flex: 1,
+    borderRadius: 8,
+    padding: 8,
+    justifyContent: 'center',
+    gap: 5,
+  },
+  themePreviewLine: {
+    height: 6,
+    borderRadius: 3,
+  },
+  themeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
   themeLabel: {
     color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     textTransform: 'capitalize',
   },
   themeLabelActive: {
     color: colors.primary,
   },
-  themeActiveDot: {
+  themeCheck: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Language
