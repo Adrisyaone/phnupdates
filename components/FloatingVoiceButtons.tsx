@@ -1243,7 +1243,7 @@ export function FloatingVoiceButtons() {
   });
 
   const shouldHideOnRoute = useMemo(() => {
-    const hiddenRoutes = new Set(['/onboarding', '/add-food', '/quick-log', '/web-viewer']);
+    const hiddenRoutes = new Set(['/onboarding', '/add-food', '/web-viewer']);
     return hiddenRoutes.has(pathname);
   }, [pathname]);
 

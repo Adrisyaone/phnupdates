@@ -561,6 +561,7 @@ export default function DashboardScreen() {
           <View style={styles.topBarRow}>
             <TouchableOpacity style={styles.menuButton} onPress={openDrawer}>
               <Menu size={18} color={colors.text} />
+              <Text style={styles.menuButtonLabel}>Menu</Text>
             </TouchableOpacity>
           </View>
 
@@ -1047,8 +1048,8 @@ const styles = createThemedStyles((colors) => ({
   heroBanner: {
     backgroundColor: colors.primary,
     paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingTop: 28,
+    paddingBottom: 28,
   },
   logoContainer: {
     alignItems: 'center',
@@ -1085,12 +1086,23 @@ const styles = createThemedStyles((colors) => ({
   menuButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+  },
+  menuButtonLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   moreButton: {
     alignItems: 'center',
@@ -1114,8 +1126,9 @@ const styles = createThemedStyles((colors) => ({
   newsSectionTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 4,
+    letterSpacing: 0.1,
   },
   newsLoadingContainer: {
     paddingVertical: 20,
@@ -1126,11 +1139,22 @@ const styles = createThemedStyles((colors) => ({
     alignItems: 'center',
     gap: 12,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 13,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
   },
   newsCardContent: {
     flex: 1,
@@ -1454,6 +1478,10 @@ const styles = createThemedStyles((colors) => ({
   },
   sectionLabelBlock: {
     gap: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    paddingLeft: 10,
+    borderRadius: 2,
   },
   sectionHeading: {
     color: colors.text,
@@ -1474,11 +1502,16 @@ const styles = createThemedStyles((colors) => ({
   gridCard: {
     width: '48%',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 18,
     paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
   },
   gridIconContainer: {
     width: 56,

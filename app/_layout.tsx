@@ -310,7 +310,6 @@ function RootLayoutNav({ isNotificationNavigationReady }: RootLayoutNavProps) {
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy' }} />
         <Stack.Screen name="public-health-day" options={{ title: 'Public Health Day' }} />
-        <Stack.Screen name="quick-log" options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
       </Stack>
     </>
   );
