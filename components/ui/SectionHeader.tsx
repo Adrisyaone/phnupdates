@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { colors } from '@/constants/colors';
+import { Text, TextStyle, View, ViewStyle } from 'react-native';
+import { colors, createThemedStyles } from '@/constants/colors';
 import { spacing } from '@/constants/theme';
 
 interface SectionHeaderProps {
@@ -29,7 +29,7 @@ export function SectionHeader({ title, subtitle, accent = colors.primary, right,
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((colors) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -56,4 +56,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-});
+}));

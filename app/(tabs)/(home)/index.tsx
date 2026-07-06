@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
+import adbs from 'ad-bs-converter';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, gradients, radii, spacing, glow } from '@/constants/theme';
@@ -35,7 +36,7 @@ const MONTH_LOCALE_MAP = {
 
 const HOME_COPY = {
   en: {
-    title: 'Public health Updates',
+    title: 'Public Health Updates',
     subtitle: 'A blog site to support and help all the public health professionals.',
     healthTips: 'Health Tips',
     quoteTitle: 'Public Health Quote of the Day',
@@ -50,7 +51,7 @@ const HOME_COPY = {
     noMonthDays: 'No listed public health days in this month.',
   },
   es: {
-    title: 'Public health Updates',
+    title: 'Public Health Updates',
     subtitle: 'A blog site to support and help all the public health professionals.',
     healthTips: 'Consejos de Salud',
     quoteTitle: 'Frase de Salud Publica del Dia',
@@ -65,7 +66,7 @@ const HOME_COPY = {
     noMonthDays: 'No hay dias de salud publica listados en este mes.',
   },
   ne: {
-    title: 'Public health Updates',
+    title: 'Public Health Updates',
     subtitle: 'A blog site to support and help all the public health professionals.',
     healthTips: 'Swasthya Tips',
     quoteTitle: 'Aajko Public Health Quote',
@@ -128,6 +129,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { language, featureSettings, updateFeatureSettings } = useSettings();
   const [monthOffset, setMonthOffset] = useState(0);
+  const [dateMode, setDateMode] = useState<'ad' | 'bs'>('ad');
   const [isMonthListExpanded, setIsMonthListExpanded] = useState(false);
   const [isTipDetailVisible, setIsTipDetailVisible] = useState(false);
   const [tipDetails, setTipDetails] = useState<HealthTipDetails | null>(null);
@@ -213,7 +215,7 @@ export default function DashboardScreen() {
 
   const copy = HOME_COPY[language] ?? HOME_COPY.en;
 
-  const { dailyTip, dailyQuote, todayDays, selectedMonthDays, selectedMonthName, featuredDay, featuredIsToday } = useMemo(() => {
+  const { dailyTip, dailyQuote, todayDays, selectedMonthDays, selectedMonthName, featuredDay, featuredIsToday, featuredDaysLeft, todayAdLabel, todayBsLabel } = useMemo(() => {
     const now = new Date();
     const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
     const currentMonth = now.getMonth() + 1;
@@ -239,6 +241,31 @@ export default function DashboardScreen() {
       featured = sorted.find((item) => item.day >= day) ?? sorted[0] ?? null;
     }
 
+    let daysLeft = 0;
+    if (featured && !featuredToday) {
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let target = new Date(now.getFullYear(), featured.month - 1, featured.day);
+      if (target < todayMidnight) {
+        target = new Date(now.getFullYear() + 1, featured.month - 1, featured.day);
+      }
+      daysLeft = Math.round((target.getTime() - todayMidnight.getTime()) / 86400000);
+    }
+
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const adLabel = now.toLocaleDateString(MONTH_LOCALE_MAP[language], {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    let bsLabel = '';
+    try {
+      const bsResult = adbs.ad2bs(`${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${pad2(now.getDate())}`);
+      bsLabel = `${bsResult.en.strShortMonth} ${bsResult.en.day}, ${bsResult.en.year} BS`;
+    } catch {
+      bsLabel = '';
+    }
+
     return {
       dailyTip: selectedTip,
       dailyQuote: selectedQuote,
@@ -247,6 +274,9 @@ export default function DashboardScreen() {
       selectedMonthName: selectedMonthLabel,
       featuredDay: featured,
       featuredIsToday: featuredToday,
+      featuredDaysLeft: daysLeft,
+      todayAdLabel: adLabel,
+      todayBsLabel: bsLabel,
     };
   }, [monthOffset, language]);
 
@@ -278,6 +308,18 @@ export default function DashboardScreen() {
   const closeTipDetails = () => {
     setIsTipDetailVisible(false);
   };
+
+  const openDayLookup = React.useCallback((item: { month: number; day: number; title: string; type: string }) => {
+    router.push({
+      pathname: '/public-health-day',
+      params: {
+        month: String(item.month),
+        day: String(item.day),
+        title: item.title,
+        type: item.type,
+      },
+    });
+  }, [router]);
 
   const openDashboardMenuByKey = React.useCallback((menuKey: DashboardMenuKey) => {
     if (menuKey === 'exam-preparation') {
@@ -538,10 +580,17 @@ export default function DashboardScreen() {
                 <PressableScale style={styles.heroIconBtn} onPress={openDrawer} haptic accessibilityLabel="Open menu">
                   <Menu size={20} color="#FFFFFF" />
                 </PressableScale>
-                <View style={styles.heroBrandPill}>
-                  <Sparkles size={13} color="#FFFFFF" />
-                  <Text style={styles.heroBrandPillText}>Public Health Nepal</Text>
-                </View>
+                <PressableScale
+                  style={styles.heroDateTogglePill}
+                  onPress={() => setDateMode((prev) => (prev === 'ad' ? 'bs' : 'ad'))}
+                  haptic
+                  accessibilityLabel="Toggle between English and Bikram Sambat date"
+                >
+                  <CalendarDays size={13} color="#FFFFFF" />
+                  <Text style={styles.heroDateTogglePillText}>
+                    {dateMode === 'bs' && todayBsLabel ? todayBsLabel : todayAdLabel}
+                  </Text>
+                </PressableScale>
                 <PressableScale style={styles.heroIconBtn} onPress={() => router.push('/settings')} haptic accessibilityLabel="Open settings">
                   <Settings size={20} color="#FFFFFF" />
                 </PressableScale>
@@ -561,25 +610,22 @@ export default function DashboardScreen() {
               <AnimatedEntrance from="up" delay={90} style={styles.heroHighlights}>
                 {featuredDay ? (
                   <PressableScale
-                    style={styles.heroDayCard}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/public-health-day',
-                        params: {
-                          month: String(featuredDay.month),
-                          day: String(featuredDay.day),
-                          title: featuredDay.title,
-                          type: featuredDay.type,
-                        },
-                      });
-                    }}
+                    style={[styles.heroDayCard, featuredIsToday ? styles.heroDayCardToday : styles.heroDayCardUpcoming]}
+                    onPress={() => openDayLookup(featuredDay)}
                     haptic
                   >
-                    <View style={styles.heroDayIcon}>
+                    <View style={[styles.heroDayIcon, featuredIsToday ? styles.heroDayIconToday : styles.heroDayIconUpcoming]}>
                       <CalendarDays size={18} color="#FFFFFF" />
                     </View>
                     <View style={styles.heroDayBody}>
-                      <Text style={styles.heroDayBadge}>{featuredIsToday ? "TODAY'S HEALTH DAY" : 'UPCOMING HEALTH DAY'}</Text>
+                      <View style={styles.heroDayBadgeRow}>
+                        <Text style={styles.heroDayBadge}>{featuredIsToday ? "TODAY'S HEALTH DAY" : 'UPCOMING HEALTH DAY'}</Text>
+                        <View style={styles.heroDayCountdownPill}>
+                          <Text style={styles.heroDayCountdownPillText}>
+                            {featuredIsToday ? 'Today' : featuredDaysLeft === 1 ? '1 day left' : `${featuredDaysLeft} days left`}
+                          </Text>
+                        </View>
+                      </View>
                       <Text style={styles.heroDayTitle} numberOfLines={2}>{featuredDay.title}</Text>
                     </View>
                     <ChevronRight size={18} color="#FFFFFFCC" />
@@ -731,12 +777,7 @@ export default function DashboardScreen() {
                   <PressableScale
                     key={`today-${item.month}-${item.day}-${item.title}`}
                     style={styles.phdTodayCard}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/public-health-day',
-                        params: { month: String(item.month), day: String(item.day), title: item.title, type: item.type },
-                      });
-                    }}
+                    onPress={() => openDayLookup(item)}
                   >
                     <View style={styles.phdTodayDot} />
                     <Text style={styles.phdTodayTitle} numberOfLines={2}>{item.title}</Text>
@@ -776,12 +817,7 @@ export default function DashboardScreen() {
                   key={`month-${selectedMonthName}-${item.month}-${item.day}-${item.title}`}
                   style={styles.phdEventRow}
                   activeScale={0.98}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/public-health-day',
-                      params: { month: String(item.month), day: String(item.day), title: item.title, type: item.type },
-                    });
-                  }}
+                  onPress={() => openDayLookup(item)}
                 >
                   <View style={styles.phdDateBox}>
                     <Text style={styles.phdDateNum}>{item.day}</Text>
@@ -978,23 +1014,6 @@ const styles = createThemedStyles((colors) => ({
     borderWidth: 1,
     borderColor: '#FFFFFF33',
   },
-  heroBrandPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF22',
-    borderColor: '#FFFFFF33',
-    borderWidth: 1,
-    borderRadius: radii.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  heroBrandPillText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
   heroCenter: {
     alignItems: 'center',
     paddingTop: spacing.sm,
@@ -1016,11 +1035,11 @@ const styles = createThemedStyles((colors) => ({
     borderRadius: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFFEE',
+    backgroundColor: '#FFFFFF',
   },
   heroLogo: {
-    width: 54,
-    height: 54,
+    width: 66,
+    height: 66,
     resizeMode: 'contain',
   },
   heroTitle: {
@@ -1030,6 +1049,21 @@ const styles = createThemedStyles((colors) => ({
     marginBottom: 6,
     textAlign: 'center',
     letterSpacing: 0.2,
+  },
+  heroDateTogglePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1E3A8A',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    ...elevation('sm'),
+  },
+  heroDateTogglePillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   heroSubtitle: {
     color: '#ffffff',
@@ -1048,12 +1082,19 @@ const styles = createThemedStyles((colors) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: '#FFFFFF1F',
     borderWidth: 1,
-    borderColor: '#FFFFFF3D',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    ...elevation('sm'),
+  },
+  heroDayCardUpcoming: {
+    backgroundColor: '#C2410C66',
+    borderColor: '#C2410C99',
+  },
+  heroDayCardToday: {
+    backgroundColor: '#1E3A8A66',
+    borderColor: '#1E3A8A99',
   },
   heroDayIcon: {
     width: 38,
@@ -1061,33 +1102,63 @@ const styles = createThemedStyles((colors) => ({
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF2E',
+  },
+  heroDayIconUpcoming: {
+    backgroundColor: '#C2410C80',
+  },
+  heroDayIconToday: {
+    backgroundColor: '#1E3A8A80',
   },
   heroDayBody: {
     flex: 1,
     gap: 2,
   },
+  heroDayBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  heroDayCountdownPill: {
+    backgroundColor: colors.warning,
+    borderRadius: radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  heroDayCountdownPillText: {
+    color: '#1F2937',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
   heroDayBadge: {
-    color: '#FFFFFFCC',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroDayTitle: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
     lineHeight: 19,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroQuoteCard: {
     flexDirection: 'row',
     gap: spacing.md,
-    backgroundColor: '#FFFFFF17',
+    backgroundColor: '#0B382F66',
     borderWidth: 1,
-    borderColor: '#FFFFFF33',
+    borderColor: '#FFFFFF40',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    ...elevation('sm'),
   },
   heroQuoteIcon: {
     width: 30,
@@ -1095,7 +1166,7 @@ const styles = createThemedStyles((colors) => ({
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF2E',
+    backgroundColor: '#00000040',
     marginTop: 2,
   },
   heroQuoteBody: {
@@ -1108,11 +1179,17 @@ const styles = createThemedStyles((colors) => ({
     lineHeight: 19,
     fontStyle: 'italic',
     fontWeight: '500',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroQuoteAuthor: {
-    color: '#FFFFFFCC',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   // Section shared ---------------------------------------------------------
   hideButtonText: {
@@ -1520,11 +1597,11 @@ const styles = createThemedStyles((colors) => ({
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFFEE',
+    backgroundColor: '#FFFFFF',
   },
   drawerLogo: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     resizeMode: 'contain',
   },
   drawerAppName: {

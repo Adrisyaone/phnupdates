@@ -173,16 +173,46 @@ function decodeParamValue(value: string): string {
   }
 }
 
+function isPdfUrl(rawUrl: string): boolean {
+  try {
+    return new URL(rawUrl).pathname.toLowerCase().endsWith('.pdf');
+  } catch {
+    return false;
+  }
+}
+
+// Android's embedded WebView has no built-in PDF plugin (unlike iOS's
+// WKWebView, which renders PDFs natively), so a raw .pdf URL just shows a
+// blank page there. Route it through Google's embeddable Docs Viewer instead.
+function toPdfViewerUrl(rawUrl: string): string {
+  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(rawUrl)}`;
+}
+
 function toInAppUrl(rawUrl: string): string {
   const videoId = getYouTubeVideoId(rawUrl);
-  if (!videoId) return rawUrl;
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https%3A%2F%2Fwww.youtube.com`;
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https%3A%2F%2Fwww.youtube.com`;
+  }
+  if (Platform.OS === 'android' && isPdfUrl(rawUrl)) {
+    return toPdfViewerUrl(rawUrl);
+  }
+  return rawUrl;
 }
 
 function isYouTubeUrl(rawUrl: string): boolean {
   try {
     const host = new URL(rawUrl).hostname.toLowerCase();
     return host.includes('youtube.com') || host.includes('youtu.be') || host.includes('youtube-nocookie.com');
+  } catch {
+    return false;
+  }
+}
+
+function isGoogleSearchUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+    return (host === 'google.com' || host.endsWith('.google.com')) && parsed.pathname === '/search';
   } catch {
     return false;
   }
@@ -205,6 +235,7 @@ export default function WebViewerScreen() {
   const safeUrl = useMemo(() => normalizeWebUrl(decodeParamValue(rawUrl)), [rawUrl]);
   const viewerUrl = useMemo(() => toInAppUrl(safeUrl), [safeUrl]);
   const isYouTube = useMemo(() => isYouTubeUrl(safeUrl), [safeUrl]);
+  const isGoogleSearch = useMemo(() => isGoogleSearchUrl(safeUrl), [safeUrl]);
   const safeTitle = Array.isArray(title) ? (title[0] || '') : (title || '');
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState(viewerUrl);
@@ -399,7 +430,7 @@ export default function WebViewerScreen() {
         )}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
-        userAgent={isYouTube
+        userAgent={isYouTube || isGoogleSearch
           ? 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
           : undefined}
       />
