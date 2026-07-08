@@ -57,6 +57,12 @@ Public Health Updates is a mobile platform for the public health community. It a
 - Save interested jobs with deadline reminder notifications
 - Deadline tracking with visual indicators
 
+### Research Grants Portal
+- Live research grants, Masters/PhD scholarships, fellowships, research internships, workshops, and trainings from a Google Sheet + Apps Script backend (see `gas/research-grants/`)
+- Filter by opportunity type and a "Funded only" toggle (type chips are derived from whatever data is in the sheet, so new types need no code changes)
+- Rich detail view: eligibility, qualifications, funding breakdown (grant amount, stipend, tuition), IELTS/GRE/certificate requirements, etc.
+- Deadline tracking with visual indicators, same caching/offline fallback as the Job Portal
+
 ### Exam Preparation
 - **Syllabus** viewer for public health exams
 - **Practice MCQs** with answer reveal
@@ -166,6 +172,7 @@ constants/
 services/
   bloggerApi.ts                    # Blogger API: fetch posts by label, extract images/excerpts
   jobPortal.ts                     # Google Apps Script job portal API
+  researchGrants.ts                # Google Apps Script research grants portal API
   publicHealthDayInfo.ts           # AI summary generator for public health days
   healthTipInfo.ts                 # AI detailed health tip generator
   interestedPosts.ts               # AsyncStorage for saved/interested posts
@@ -297,6 +304,7 @@ npm run build:web
 | `examPreparation.geminiApiKey` | Gemini API key for AI quiz/tutor |
 | `examPreparation.geminiModel` | Gemini model name (default: `gemini-1.5-flash`) |
 | `jobPortal.jobPortalGasUrl` | Google Apps Script for job listings |
+| `researchGrants.researchGrantsGasUrl` | Google Apps Script for the Research Grants portal (see `gas/research-grants/README.md`) |
 
 ### Supported Languages
 
@@ -358,6 +366,11 @@ The repo includes a `netlify.toml` configured for web builds:
 
 ### Job portal not loading?
 - Verify `jobPortalGasUrl` in `app.json → extra.jobPortal` points to a deployed Google Apps Script web app
+- The GAS endpoint must be deployed as "Execute as: Me" and "Who has access: Anyone"
+
+### Research Grants portal not loading?
+- Verify `researchGrantsGasUrl` in `app.json → extra.researchGrants` points to a deployed Google Apps Script web app
+- See `gas/research-grants/README.md` for the Sheet layout and Apps Script deployment steps
 - The GAS endpoint must be deployed as "Execute as: Me" and "Who has access: Anyone"
 
 ### Notifications not working?

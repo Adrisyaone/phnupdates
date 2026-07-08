@@ -64,6 +64,9 @@
       "jobPortal": {
         "jobPortalGasUrl": "https://script.google.com/macros/s/AKfycbwQWGGMwc_HYu0YbYBW9bvIHVAJcTtzz-Em1anwM-mFsG8098inivZ-Z9IPWOQS6q-y5A/exec"
       },
+      "researchGrants": {
+        "researchGrantsGasUrl": "https://script.google.com/macros/s/AKfycby1uJ1JXP0D5owoab3NplF-YouNsvMYzaFkl9J94CZ9OU9KFCpj8YfLZA1sU4z5knBnQg/exec"
+      },
       "eas": {
         "projectId": "8629caf7-00cb-4d2d-a7fc-a39cd6705d1e"
       }

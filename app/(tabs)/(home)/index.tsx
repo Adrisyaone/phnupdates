@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
+import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, GraduationCap, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
 import adbs from 'ad-bs-converter';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
@@ -358,6 +358,14 @@ export default function DashboardScreen() {
       onPress: () => { router.push('/(tabs)/(home)/job-portal'); },
     },
     {
+      key: 'research-grants',
+      title: 'Research Grants',
+      description: 'Research grants, scholarships, fellowships, and workshops.',
+      color: '#0D9488',
+      icon: GraduationCap,
+      onPress: () => { router.push('/(tabs)/(home)/research-grants'); },
+    },
+    {
       key: 'opportunities',
       title: 'Opportunities',
       description: 'Funding, calls, and vacancy opportunities.',
@@ -540,7 +548,7 @@ export default function DashboardScreen() {
     {
       title: 'Updates',
       subtitle: 'Latest posts and public health alerts.',
-      keys: ['job-portal', 'opportunities', 'news', 'nagarik-awaz'],
+      keys: ['job-portal', 'research-grants', 'opportunities', 'news', 'nagarik-awaz'],
     },
     {
       title: 'Learning & Resources',

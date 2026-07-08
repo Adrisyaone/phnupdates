@@ -128,6 +128,12 @@ export default function HomeLayout() {
           title: 'Job Portal',
         }}
       />
+      <Stack.Screen
+        name="research-grants"
+        options={{
+          title: 'Research Grants',
+        }}
+      />
     </Stack>
   );
 }
