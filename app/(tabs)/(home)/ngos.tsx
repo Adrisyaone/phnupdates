@@ -2,29 +2,35 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   RefreshControl,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Briefcase, Building2, ChevronRight, MapPin, Search } from 'lucide-react-native';
+import { Briefcase, Building2, ChevronRight, Facebook, Globe, MapPin, Search } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
 import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { loadNgos, Ngo, normalizeOrgName } from '@/services/ngos';
-import { loadJobPostings, isDeadlinePassed } from '@/services/jobPortal';
+import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
+
+function openLink(url: string) {
+  if (!url) return;
+  const href = url.startsWith('http') ? url : `https://${url}`;
+  void Linking.openURL(href);
+}
 
 const ALL_FILTER = 'All';
 
 export default function NgosScreen() {
   const router = useRouter();
   const [ngos, setNgos] = useState<Ngo[]>([]);
-  const [jobCounts, setJobCounts] = useState<Map<string, number>>(new Map());
+  const [jobsByOrg, setJobsByOrg] = useState<Map<string, JobPosting[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,16 +46,18 @@ export default function NgosScreen() {
 
     const [ngosResult, jobsResult] = await Promise.all([loadNgos(), loadJobPostings()]);
 
-    const counts = new Map<string, number>();
+    const byOrg = new Map<string, JobPosting[]>();
     for (const job of jobsResult.jobs) {
       if (isDeadlinePassed(job.applicationDeadline)) continue;
       const key = normalizeOrgName(job.organization || '');
       if (!key) continue;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      const list = byOrg.get(key) || [];
+      list.push(job);
+      byOrg.set(key, list);
     }
 
     setNgos(ngosResult.ngos);
-    setJobCounts(counts);
+    setJobsByOrg(byOrg);
     setError(ngosResult.error);
     setIsLoading(false);
     setIsRefreshing(false);
@@ -104,7 +112,7 @@ export default function NgosScreen() {
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{Array.from(jobCounts.values()).reduce((sum, n) => sum + n, 0)}</Text>
+            <Text style={styles.summaryNum}>{Array.from(jobsByOrg.values()).reduce((sum, jobs) => sum + jobs.length, 0)}</Text>
             <Text style={styles.summaryLabel}>Open Jobs</Text>
           </View>
         </LinearGradient>
@@ -169,11 +177,11 @@ export default function NgosScreen() {
         {!isLoading ? (
           <View style={styles.list}>
             {filteredNgos.map((ngo, index) => {
-              const jobCount = jobCounts.get(normalizeOrgName(ngo.name)) || 0;
+              const matchedJobs = jobsByOrg.get(normalizeOrgName(ngo.name)) || [];
               const location = [ngo.officeLocation, ngo.headquarters].filter(Boolean).join(' · ');
               return (
                 <AnimatedEntrance key={ngo.id} index={Math.min(index, 8)} from="up">
-                  <PressableScale style={styles.card} onPress={() => openNgoJobs(ngo)} activeScale={0.99}>
+                  <View style={styles.card}>
                     <View style={styles.cardTop}>
                       {ngo.logo ? (
                         <Image source={{ uri: ngo.logo }} style={styles.logo} />
@@ -191,7 +199,6 @@ export default function NgosScreen() {
                           </View>
                         ) : null}
                       </View>
-                      <ChevronRight size={16} color={colors.textLight} />
                     </View>
 
                     <View style={styles.cardBadges}>
@@ -205,15 +212,78 @@ export default function NgosScreen() {
                           <Text style={[styles.badgeText, styles.badgeTextAlt]}>{ngo.sector}</Text>
                         </View>
                       ) : null}
+                      {ngo.establishedYear ? (
+                        <View style={[styles.badge, styles.badgeMuted]}>
+                          <Text style={[styles.badgeText, styles.badgeTextMuted]}>Est. {ngo.establishedYear}</Text>
+                        </View>
+                      ) : null}
                     </View>
 
-                    <View style={styles.cardFooter}>
-                      <Briefcase size={13} color={jobCount > 0 ? colors.primary : colors.textLight} />
-                      <Text style={[styles.jobsText, jobCount > 0 && styles.jobsTextActive]}>
-                        {jobCount > 0 ? `${jobCount} open job${jobCount === 1 ? '' : 's'}` : 'No open jobs right now'}
-                      </Text>
-                    </View>
-                  </PressableScale>
+                    {ngo.description ? (
+                      <Text style={styles.description} numberOfLines={5}>{ngo.description}</Text>
+                    ) : null}
+
+                    {ngo.keyPrograms ? (
+                      <View style={styles.programsBlock}>
+                        <Text style={styles.programsLabel}>Key Programs</Text>
+                        <Text style={styles.programsText} numberOfLines={3}>{ngo.keyPrograms}</Text>
+                      </View>
+                    ) : null}
+
+                    {(ngo.website || ngo.facebook) ? (
+                      <View style={styles.linksRow}>
+                        {ngo.website ? (
+                          <PressableScale style={styles.linkBtn} onPress={() => openLink(ngo.website)}>
+                            <Globe size={13} color={colors.primary} />
+                            <Text style={styles.linkBtnText} numberOfLines={1}>Website</Text>
+                          </PressableScale>
+                        ) : null}
+                        {ngo.facebook ? (
+                          <PressableScale style={styles.linkBtn} onPress={() => openLink(ngo.facebook)}>
+                            <Facebook size={13} color={colors.primary} />
+                            <Text style={styles.linkBtnText} numberOfLines={1}>Facebook</Text>
+                          </PressableScale>
+                        ) : null}
+                      </View>
+                    ) : null}
+
+                    <View style={styles.cardDivider} />
+
+                    {matchedJobs.length > 0 ? (
+                      <View style={styles.jobsSection}>
+                        <View style={styles.jobsSectionHeader}>
+                          <Briefcase size={13} color={colors.primary} />
+                          <Text style={styles.jobsSectionTitle}>
+                            {matchedJobs.length} open job{matchedJobs.length === 1 ? '' : 's'}
+                          </Text>
+                        </View>
+                        {matchedJobs.map((job) => {
+                          const deadline = formatDeadline(job.applicationDeadline);
+                          return (
+                            <PressableScale
+                              key={job.id}
+                              style={styles.jobRow}
+                              onPress={() => openNgoJobs(ngo)}
+                              activeScale={0.98}
+                            >
+                              <View style={styles.jobRowMeta}>
+                                <Text style={styles.jobRowTitle} numberOfLines={1}>{job.jobTitle}</Text>
+                                <Text style={styles.jobRowSub} numberOfLines={1}>
+                                  {[job.jobType, deadline && `Due ${deadline}`].filter(Boolean).join(' · ')}
+                                </Text>
+                              </View>
+                              <ChevronRight size={14} color={colors.textLight} />
+                            </PressableScale>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View style={styles.cardFooter}>
+                        <Briefcase size={13} color={colors.textLight} />
+                        <Text style={styles.jobsText}>No open jobs right now</Text>
+                      </View>
+                    )}
+                  </View>
                 </AnimatedEntrance>
               );
             })}
@@ -424,13 +494,59 @@ const styles = createThemedStyles((c) => ({
   badgeTextAlt: {
     color: c.secondary,
   },
+  badgeMuted: {
+    backgroundColor: c.surfaceAlt,
+    borderColor: c.border,
+  },
+  badgeTextMuted: {
+    color: c.textSecondary,
+  },
+  description: {
+    color: c.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  programsBlock: {
+    gap: 2,
+  },
+  programsLabel: {
+    color: c.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  programsText: {
+    color: c.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  linksRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  linkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  linkBtnText: {
+    color: c.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: c.border,
+  },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-    paddingTop: 8,
   },
   jobsText: {
     color: c.textLight,
@@ -439,5 +555,41 @@ const styles = createThemedStyles((c) => ({
   },
   jobsTextActive: {
     color: c.primary,
+  },
+  jobsSection: {
+    gap: 6,
+  },
+  jobsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  jobsSectionTitle: {
+    color: c.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  jobRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 8,
+    backgroundColor: c.surfaceAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  jobRowMeta: {
+    flex: 1,
+    gap: 1,
+  },
+  jobRowTitle: {
+    color: c.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  jobRowSub: {
+    color: c.textLight,
+    fontSize: 11,
+    fontWeight: '500',
   },
 }));

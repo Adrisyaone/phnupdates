@@ -540,12 +540,17 @@ export default function DashboardScreen() {
     {
       title: 'Updates',
       subtitle: 'Latest posts and public health alerts.',
-      keys: ['job-portal', 'research-grants', 'ngos', 'news', 'nagarik-awaz'],
+      keys: ['job-portal', 'research-grants', 'news', 'nagarik-awaz'],
     },
     {
       title: 'Learning & Resources',
       subtitle: 'Knowledge, references, and reading material.',
       keys: ['knowledge-hub', 'articles', 'books', 'factsheet', 'research-tools', 'literatures', 'exam-preparation'],
+    },
+    {
+      title: 'Organizations in Nepal',
+      subtitle: 'NGOs and their open opportunities.',
+      keys: ['ngos'],
     },
     {
       title: 'Tools',
