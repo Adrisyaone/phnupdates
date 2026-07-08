@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Briefcase, Building2, Calendar, ChevronDown, ChevronRight, Clock, ExternalLink, Mail, MapPin, X } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
 import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
+import { normalizeOrgName } from '@/services/ngos';
 
 const ALL_FILTER = 'All';
 
@@ -238,6 +240,9 @@ const modalStyles = {
 };
 
 export default function JobPortalScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ organization?: string | string[] }>();
+  const organizationFilter = Array.isArray(params.organization) ? params.organization[0] : params.organization;
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -275,13 +280,15 @@ export default function JobPortalScreen() {
   }, [jobs]);
 
   const filteredJobs = useMemo(() => {
+    const normalizedOrg = organizationFilter ? normalizeOrgName(organizationFilter) : null;
     return jobs.filter((j) => {
+      if (normalizedOrg && normalizeOrgName(j.organization || '') !== normalizedOrg) return false;
       if (selectedType !== ALL_FILTER && j.jobType !== selectedType) return false;
       if (selectedArrangement !== ALL_FILTER && j.workArrangement !== selectedArrangement) return false;
       if (!showExpired && isDeadlinePassed(j.applicationDeadline)) return false;
       return true;
     });
-  }, [jobs, selectedType, selectedArrangement, showExpired]);
+  }, [jobs, selectedType, selectedArrangement, showExpired, organizationFilter]);
 
   const expiredCount = useMemo(
     () => jobs.filter((j) => isDeadlinePassed(j.applicationDeadline)).length,
@@ -325,6 +332,16 @@ export default function JobPortalScreen() {
             <Text style={styles.summaryLabel}>Total</Text>
           </View>
         </LinearGradient>
+
+        {organizationFilter ? (
+          <View style={styles.orgFilterBanner}>
+            <Building2 size={14} color={colors.primary} />
+            <Text style={styles.orgFilterText} numberOfLines={1}>Showing jobs at {organizationFilter}</Text>
+            <TouchableOpacity onPress={() => router.setParams({ organization: '' })}>
+              <Text style={styles.orgFilterClear}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* Filters */}
         {jobTypes.length > 1 ? (
@@ -506,6 +523,28 @@ const styles = createThemedStyles((c) => ({
   summaryLabel: {
     color: '#FFFFFFDD',
     fontSize: 11,
+    fontWeight: '700',
+  },
+  orgFilterBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.primary + '40',
+    backgroundColor: c.primary + '12',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  orgFilterText: {
+    flex: 1,
+    color: c.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  orgFilterClear: {
+    color: c.primary,
+    fontSize: 12,
     fontWeight: '700',
   },
   filterSection: {

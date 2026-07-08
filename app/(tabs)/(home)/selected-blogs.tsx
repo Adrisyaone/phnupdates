@@ -13,7 +13,6 @@ import { getInterestedPosts, InterestedPost, removeInterestedPost } from '@/serv
 
 const CATEGORY_ORDER: Array<{ key: DashboardMenuKey | 'all' | 'uncategorized'; title: string }> = [
   { key: 'all', title: 'All' },
-  { key: 'opportunities', title: 'Opportunities' },
   { key: 'dashboards', title: 'Dashboards' },
   { key: 'news', title: 'News' },
   { key: 'articles', title: 'Reports & Documents' },

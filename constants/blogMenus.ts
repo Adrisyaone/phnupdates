@@ -1,5 +1,4 @@
 export type DashboardMenuKey =
-  | 'opportunities'
   | 'dashboards'
   | 'news'
   | 'articles'
@@ -17,7 +16,7 @@ export interface BlogSubmenuDefinition {
   description: string;
   labels: string[];
   emptyMessage: string;
-  type?: 'jobs' | 'posts';
+  type?: 'posts';
   url?: string;
   route?: string;
 }
@@ -30,7 +29,6 @@ export interface DashboardMenuDefinition {
 }
 
 export const MENU_THEME_COLORS: Record<DashboardMenuKey, string> = {
-  opportunities: '#3B82F6',
   dashboards: '#2DD4BF',
   news: '#F97316',
   articles: '#818CF8',
@@ -46,49 +44,6 @@ export const MENU_THEME_COLORS: Record<DashboardMenuKey, string> = {
 export const JOB_PORTAL_LABELS = ['vacancy', 'Opportunities'];
 
 export const DASHBOARD_MENUS: DashboardMenuDefinition[] = [
-  {
-    key: 'opportunities',
-    title: 'Opportunities',
-    description: 'Funding, calls, and vacancy opportunities.',
-    submenus: [
-      {
-        key: 'jobs-portal',
-        title: 'Jobs Portal',
-        description: 'Browse and search vacancy posts as a job portal.',
-        labels: JOB_PORTAL_LABELS,
-        emptyMessage: 'No job opportunities found yet.',
-        type: 'jobs',
-      },
-      {
-        key: 'grants',
-        title: 'Grants',
-        description: 'Grants and proposal opportunities.',
-        labels: ['Grants'],
-        emptyMessage: 'No grant opportunities found yet.',
-      },
-      {
-        key: 'expression-of-interest',
-        title: 'Expression of Interest',
-        description: 'EOI-related calls and notices.',
-        labels: ['Expression of Interest', 'Opportunities'],
-        emptyMessage: 'No EOI posts found yet.',
-      },
-      {
-        key: 'call-for-paper',
-        title: 'Call for Paper',
-        description: 'Paper submission calls and notices.',
-        labels: ['Call for papers', 'Opportunities'],
-        emptyMessage: 'No call for paper posts found yet.',
-      },
-      {
-        key: 'call-for-abstract',
-        title: 'Call for Abstract',
-        description: 'Abstract submission calls and notices.',
-        labels: ['Call for abstract', 'Call for papers', 'Opportunities'],
-        emptyMessage: 'No call for abstract posts found yet.',
-      },
-    ],
-  },
   {
     key: 'dashboards',
     title: 'Dashboards',

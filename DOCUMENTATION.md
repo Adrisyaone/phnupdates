@@ -39,13 +39,11 @@ Public Health Updates is a mobile platform for the public health community. It a
 - **Quote of the Day** — daily rotating public health quote
 - **Latest News** — live-fetched recent public health news cards
 - **Job Portal Preview** — active job listings with deadlines
-- **New Opportunities** — recent vacancy, grant, scholarship, and call-for-paper posts
 - **Menu Grid** — icon grid for quick navigation to all app sections
 - **Side Drawer** — swipe-right or tap Menu for full navigation
 
 ### News & Content
 - Public health news articles from [phnupdates.com](https://phnupdates.com)
-- Opportunities: vacancies, grants, scholarships, expression of interest, call for papers
 - Reports & Documents: international and national public health documents
 - Fact Sheets: scales, policies, and public health dashboard facts
 - Literature: stories, poems, and creative public health writing
@@ -62,6 +60,12 @@ Public Health Updates is a mobile platform for the public health community. It a
 - Filter by opportunity type and a "Funded only" toggle (type chips are derived from whatever data is in the sheet, so new types need no code changes)
 - Rich detail view: eligibility, qualifications, funding breakdown (grant amount, stipend, tuition), IELTS/GRE/certificate requirements, etc.
 - Deadline tracking with visual indicators, same caching/offline fallback as the Job Portal
+
+### NGOs Directory
+- Live NGO listing from a Google Sheet + Apps Script backend (see `gas/ngos/`)
+- Search by name/sector/location and filter by sector
+- Each card shows a live count of that NGO's open (non-expired) job postings
+- Tapping an NGO opens the Job Portal pre-filtered to that organization's jobs (matched by name), with a "Clear" chip to return to the full listing
 
 ### Exam Preparation
 - **Syllabus** viewer for public health exams
@@ -133,8 +137,8 @@ app/
       _layout.tsx                  # Home stack with all sub-screen registrations
       index.tsx                    # Dashboard (hero, news, jobs, menu grid, drawer)
       category.tsx                 # Blog post category listing
-      jobs.tsx                     # Job/opportunity listings
       job-portal.tsx               # Job portal (main portal view)
+      ngos.tsx                     # NGOs directory (tap through to that NGO's jobs)
       books.tsx                    # Books and references
       calculator.tsx               # Calculator hub (links to sub-tools)
       calorie-estimator.tsx        # AI calorie estimation tool
@@ -204,8 +208,8 @@ The app uses a single-stack navigation rooted at `(tabs)`, accessed via the home
 | **Home** | `/(tabs)/(home)` | Dashboard with news, jobs, menu grid |
 | **Knowledge** | `/(tabs)/knowledge` | Articles, videos, tips by condition |
 | **Category** | `/(tabs)/(home)/category` | Blog posts by menu/submenu key |
-| **Jobs** | `/(tabs)/(home)/jobs` | Job and opportunity listings |
-| **Job Portal** | `/(tabs)/(home)/job-portal` | Full job portal |
+| **Job Portal** | `/(tabs)/(home)/job-portal` | Full job portal (accepts `?organization=` to pre-filter) |
+| **NGOs** | `/(tabs)/(home)/ngos` | NGO directory, tap through to that NGO's jobs |
 | **Books** | `/(tabs)/(home)/books` | Recommended books |
 | **Calculator** | `/(tabs)/(home)/calculator` | Tools hub |
 | **Exam Prep** | `/(tabs)/(home)/exam-preparation` | Exam prep suite |

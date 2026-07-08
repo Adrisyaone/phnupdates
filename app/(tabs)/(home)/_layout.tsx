@@ -24,12 +24,6 @@ export default function HomeLayout() {
         }}
       />
       <Stack.Screen
-        name="jobs"
-        options={{
-          title: 'Opportunities',
-        }}
-      />
-      <Stack.Screen
         name="books"
         options={{
           title: 'Books',
@@ -124,14 +118,20 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="job-portal"
-        options={{
-          title: 'Job Portal',
-        }}
+        options={({ route }: any) => ({
+          title: route?.params?.organization ? `${route.params.organization} Jobs` : 'Job Portal',
+        })}
       />
       <Stack.Screen
         name="research-grants"
         options={{
           title: 'Research Grants',
+        }}
+      />
+      <Stack.Screen
+        name="ngos"
+        options={{
+          title: 'NGOs',
         }}
       />
     </Stack>

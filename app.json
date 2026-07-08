@@ -67,6 +67,9 @@
       "researchGrants": {
         "researchGrantsGasUrl": "https://script.google.com/macros/s/AKfycby1uJ1JXP0D5owoab3NplF-YouNsvMYzaFkl9J94CZ9OU9KFCpj8YfLZA1sU4z5knBnQg/exec"
       },
+      "ngos": {
+        "ngosGasUrl": "https://script.google.com/macros/s/AKfycbyen8RMI79bbRBiTYnyMbSBtXwM9zqvoF6ZJmxP3e57gSbIEjBr_EMb9ZaUtIR6zhty/exec"
+      },
       "eas": {
         "projectId": "8629caf7-00cb-4d2d-a7fc-a39cd6705d1e"
       }

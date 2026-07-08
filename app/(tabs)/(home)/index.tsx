@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BookMarked, BookOpen, BriefcaseBusiness, Briefcase, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, GraduationCap, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
+import { BookMarked, BookOpen, Briefcase, Building2, Calculator, CalendarDays, ChevronLeft, ChevronRight, Facebook, FileText, Globe, GraduationCap, ImageIcon, Lightbulb, Menu, Newspaper, ScanLine, ScrollText, Settings, Sparkles, ChevronRightCircle, NotebookPen, Youtube } from 'lucide-react-native';
 import adbs from 'ad-bs-converter';
 import { DASHBOARD_MENUS, DashboardMenuKey, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
@@ -331,14 +331,6 @@ export default function DashboardScreen() {
     const defaultSubmenu = menu?.submenus?.[0];
     if (!defaultSubmenu) return;
 
-    if (defaultSubmenu.type === 'jobs') {
-      router.push({
-        pathname: '/(tabs)/(home)/jobs',
-        params: { menuKey },
-      });
-      return;
-    }
-
     router.push({
       pathname: '/(tabs)/(home)/category',
       params: {
@@ -366,12 +358,12 @@ export default function DashboardScreen() {
       onPress: () => { router.push('/(tabs)/(home)/research-grants'); },
     },
     {
-      key: 'opportunities',
-      title: 'Opportunities',
-      description: 'Funding, calls, and vacancy opportunities.',
-      color: getMenuThemeColor('opportunities'),
-      icon: BriefcaseBusiness,
-      onPress: () => { openDashboardMenuByKey('opportunities'); },
+      key: 'ngos',
+      title: 'NGOs',
+      description: 'Browse NGOs and open jobs at each organization.',
+      color: '#0891B2',
+      icon: Building2,
+      onPress: () => { router.push('/(tabs)/(home)/ngos'); },
     },
     {
       key: 'news',
@@ -548,7 +540,7 @@ export default function DashboardScreen() {
     {
       title: 'Updates',
       subtitle: 'Latest posts and public health alerts.',
-      keys: ['job-portal', 'research-grants', 'opportunities', 'news', 'nagarik-awaz'],
+      keys: ['job-portal', 'research-grants', 'ngos', 'news', 'nagarik-awaz'],
     },
     {
       title: 'Learning & Resources',
