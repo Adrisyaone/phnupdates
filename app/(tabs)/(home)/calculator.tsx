@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, ArrowLeftRight, CalendarDays, Calculator, Flame } from 'lucide-react-native';
+import { ArrowRight, ArrowLeftRight, CalendarDays, Calculator, Flame, LandPlot } from 'lucide-react-native';
 import { getDashboardMenu, getMenuThemeColor } from '@/constants/blogMenus';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, glow, radii, spacing } from '@/constants/theme';
@@ -13,6 +13,7 @@ const TOOL_ICON_MAP = {
   'calorie-estimation': Flame,
   'bmi-calculator': Calculator,
   'measurement-converter': ArrowLeftRight,
+  'area-converter': LandPlot,
   'date-converter': CalendarDays,
 } as const;
 
@@ -34,8 +35,8 @@ export default function CalculatorHubScreen() {
     },
     {
       title: 'Converters',
-      subtitle: 'Convert measurements and dates.',
-      items: ['measurement-converter', 'date-converter'],
+      subtitle: 'Convert measurements, area, and dates.',
+      items: ['measurement-converter', 'area-converter', 'date-converter'],
     },
   ] as const;
 

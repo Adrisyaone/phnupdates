@@ -60,6 +60,12 @@ export default function HomeLayout() {
         }}
       />
       <Stack.Screen
+        name="area-converter"
+        options={{
+          title: 'Area Converter',
+        }}
+      />
+      <Stack.Screen
         name="date-converter"
         options={{
           title: 'Date Converter',

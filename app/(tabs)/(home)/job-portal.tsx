@@ -13,12 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Briefcase, Building2, Calendar, ChevronDown, ChevronRight, Clock, ExternalLink, Mail, MapPin, X } from 'lucide-react-native';
+import { Briefcase, Building2, Calendar, ChevronDown, ChevronRight, Clock, ExternalLink, Heart, Mail, MapPin, X } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
-import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
+import { AnimatedEntrance, AuroraBackground, InterestButton, PressableScale } from '@/components/ui';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 import { normalizeOrgName } from '@/services/ngos';
+import { useInterested } from '@/services/interests';
 
 const ALL_FILTER = 'All';
 
@@ -60,11 +61,15 @@ function JobDetailModal({
   visible,
   onClose,
   onOpenWebsite,
+  isInterested,
+  onToggleInterested,
 }: {
   job: JobPosting | null;
   visible: boolean;
   onClose: () => void;
   onOpenWebsite: (url: string, title: string) => void;
+  isInterested: boolean;
+  onToggleInterested: () => void;
 }) {
   if (!job) return null;
 
@@ -83,6 +88,7 @@ function JobDetailModal({
         <View style={modalStyles.card}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.headerTitle} numberOfLines={2}>{job.jobTitle}</Text>
+            <InterestButton interested={isInterested} onToggle={onToggleInterested} color={ACCENT} size={32} />
             <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
               <X size={18} color={colors.text} />
             </TouchableOpacity>
@@ -258,6 +264,8 @@ export default function JobPortalScreen() {
   const [selectedArrangement, setSelectedArrangement] = useState<string>(ALL_FILTER);
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+  const [interestedOnly, setInterestedOnly] = useState(false);
+  const { isInterested, toggleInterested } = useInterested('jobs');
 
   const openWebsite = useCallback((url: string, title: string) => {
     if (!url) return;
@@ -298,10 +306,11 @@ export default function JobPortalScreen() {
       if (normalizedOrg && normalizeOrgName(j.organization || '') !== normalizedOrg) return false;
       if (selectedType !== ALL_FILTER && j.jobType !== selectedType) return false;
       if (selectedArrangement !== ALL_FILTER && j.workArrangement !== selectedArrangement) return false;
+      if (interestedOnly && !isInterested(j.id)) return false;
       if (!showExpired && isDeadlinePassed(j.applicationDeadline)) return false;
       return true;
     });
-  }, [jobs, selectedType, selectedArrangement, showExpired, organizationFilter]);
+  }, [jobs, selectedType, selectedArrangement, showExpired, interestedOnly, isInterested, organizationFilter]);
 
   const expiredCount = useMemo(
     () => jobs.filter((j) => isDeadlinePassed(j.applicationDeadline)).length,
@@ -391,15 +400,25 @@ export default function JobPortalScreen() {
           </View>
         ) : null}
 
-        {expiredCount > 0 ? (
-          <TouchableOpacity style={styles.expiredToggle} onPress={() => setShowExpired((v) => !v)}>
-            <Clock size={13} color={colors.textLight} />
-            <Text style={styles.expiredToggleText}>
-              {showExpired ? `Hide ${expiredCount} expired` : `Show ${expiredCount} expired`}
-            </Text>
-            <ChevronDown size={13} color={colors.textLight} style={showExpired ? { transform: [{ rotate: '180deg' }] } : undefined} />
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.expiredToggle, interestedOnly && styles.expiredToggleActive]}
+            onPress={() => setInterestedOnly((v) => !v)}
+          >
+            <Heart size={13} color={interestedOnly ? '#fff' : colors.textLight} fill={interestedOnly ? '#fff' : 'none'} />
+            <Text style={[styles.expiredToggleText, interestedOnly && styles.expiredToggleTextActive]}>Interested</Text>
           </TouchableOpacity>
-        ) : null}
+
+          {expiredCount > 0 ? (
+            <TouchableOpacity style={styles.expiredToggle} onPress={() => setShowExpired((v) => !v)}>
+              <Clock size={13} color={colors.textLight} />
+              <Text style={styles.expiredToggleText}>
+                {showExpired ? `Hide ${expiredCount} expired` : `Show ${expiredCount} expired`}
+              </Text>
+              <ChevronDown size={13} color={colors.textLight} style={showExpired ? { transform: [{ rotate: '180deg' }] } : undefined} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
         {/* Loading */}
         {isLoading ? (
@@ -439,6 +458,7 @@ export default function JobPortalScreen() {
               const deadline = formatDeadline(job.applicationDeadline);
               return (
                 <AnimatedEntrance key={job.id} index={Math.min(jIndex, 8)} from="up">
+                <View style={styles.jobCardWrap}>
                 <PressableScale
                   style={[styles.jobCard, passed && styles.jobCardExpired]}
                   onPress={() => setSelectedJob(job)}
@@ -480,6 +500,10 @@ export default function JobPortalScreen() {
                     ) : null}
                   </View>
                 </PressableScale>
+                <View style={styles.interestCorner} pointerEvents="box-none">
+                  <InterestButton interested={isInterested(job.id)} onToggle={() => toggleInterested(job.id)} color={ACCENT} />
+                </View>
+                </View>
                 </AnimatedEntrance>
               );
             })}
@@ -492,6 +516,8 @@ export default function JobPortalScreen() {
         visible={selectedJob !== null}
         onClose={() => setSelectedJob(null)}
         onOpenWebsite={openWebsite}
+        isInterested={selectedJob ? isInterested(selectedJob.id) : false}
+        onToggleInterested={() => selectedJob && toggleInterested(selectedJob.id)}
       />
     </SafeAreaView>
   );
@@ -593,6 +619,11 @@ const styles = createThemedStyles((c) => ({
   chipTextActive: {
     color: '#fff',
   },
+  toggleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   expiredToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -605,10 +636,17 @@ const styles = createThemedStyles((c) => ({
     borderColor: c.border,
     backgroundColor: c.surface,
   },
+  expiredToggleActive: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
   expiredToggleText: {
     color: c.textLight,
     fontSize: 12,
     fontWeight: '600',
+  },
+  expiredToggleTextActive: {
+    color: '#fff',
   },
   centerBox: {
     alignItems: 'center',
@@ -645,6 +683,14 @@ const styles = createThemedStyles((c) => ({
   jobList: {
     gap: spacing.md,
   },
+  jobCardWrap: {
+    position: 'relative',
+  },
+  interestCorner: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
   jobCard: {
     backgroundColor: c.surface,
     borderWidth: 1,
@@ -661,6 +707,7 @@ const styles = createThemedStyles((c) => ({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+    paddingRight: 36,
   },
   jobIconWrap: {
     width: 40,

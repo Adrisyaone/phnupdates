@@ -299,6 +299,14 @@ export const DASHBOARD_MENUS: DashboardMenuDefinition[] = [
         route: '/(tabs)/(home)/measurement-converter',
       },
       {
+        key: 'area-converter',
+        title: 'Area Converter',
+        description: 'Convert land area between Nepali units and international units.',
+        labels: [],
+        emptyMessage: 'Open the area converter.',
+        route: '/(tabs)/(home)/area-converter',
+      },
+      {
         key: 'date-converter',
         title: 'Date Converter',
         description: 'Convert dates between Gregorian and Bikram Sambat.',

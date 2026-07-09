@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Facebook,
   Globe,
+  Heart,
   Mail,
   MapPin,
   Phone,
@@ -29,9 +30,10 @@ import {
 } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
-import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
+import { AnimatedEntrance, AuroraBackground, InterestButton, PressableScale } from '@/components/ui';
 import { loadNgos, Ngo, normalizeOrgName } from '@/services/ngos';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
+import { useInterested } from '@/services/interests';
 
 // Page accent colors — deliberately darker than colors.primary/secondary so
 // text and icons keep sufficient contrast against light card/badge backgrounds.
@@ -59,6 +61,8 @@ function NgoDetailModal({
   onClose,
   onViewJobs,
   onOpenLink,
+  isInterested,
+  onToggleInterested,
 }: {
   ngo: Ngo | null;
   jobs: JobPosting[];
@@ -66,6 +70,8 @@ function NgoDetailModal({
   onClose: () => void;
   onViewJobs: (ngo: Ngo) => void;
   onOpenLink: (url: string, title: string) => void;
+  isInterested: boolean;
+  onToggleInterested: () => void;
 }) {
   if (!ngo) return null;
 
@@ -84,6 +90,7 @@ function NgoDetailModal({
               </View>
             )}
             <Text style={modalStyles.headerTitle} numberOfLines={2}>{ngo.name}</Text>
+            <InterestButton interested={isInterested} onToggle={onToggleInterested} color={ACCENT} size={32} />
             <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
               <X size={18} color={colors.text} />
             </TouchableOpacity>
@@ -343,7 +350,9 @@ export default function NgosScreen() {
   const [query, setQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>(ALL_FILTER);
   const [selectedSector, setSelectedSector] = useState<string>(ALL_FILTER);
+  const [interestedOnly, setInterestedOnly] = useState(false);
   const [selectedNgo, setSelectedNgo] = useState<Ngo | null>(null);
+  const { isInterested, toggleInterested } = useInterested('organizations');
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -384,18 +393,33 @@ export default function NgosScreen() {
     return [ALL_FILTER, ...Array.from(set)];
   }, [ngos]);
 
+  const activeJobCountFor = useCallback((ngo: Ngo) => {
+    const jobs = jobsByOrg.get(normalizeOrgName(ngo.name)) || [];
+    return jobs.filter((j) => !isDeadlinePassed(j.applicationDeadline)).length;
+  }, [jobsByOrg]);
+
+  // Organizations with open jobs surface first; order is otherwise preserved.
+  const sortedNgos = useMemo(() => {
+    return [...ngos].sort((a, b) => {
+      const aHasJobs = activeJobCountFor(a) > 0 ? 1 : 0;
+      const bHasJobs = activeJobCountFor(b) > 0 ? 1 : 0;
+      return bHasJobs - aHasJobs;
+    });
+  }, [ngos, activeJobCountFor]);
+
   const filteredNgos = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return ngos.filter((n) => {
+    return sortedNgos.filter((n) => {
       if (selectedType !== ALL_FILTER && n.ngoType !== selectedType) return false;
       if (selectedSector !== ALL_FILTER && n.sector !== selectedSector) return false;
+      if (interestedOnly && !isInterested(n.id)) return false;
       if (normalizedQuery) {
         const haystack = `${n.name} ${n.sector} ${n.headquarters} ${n.officeLocation}`.toLowerCase();
         if (!haystack.includes(normalizedQuery)) return false;
       }
       return true;
     });
-  }, [ngos, selectedType, selectedSector, query]);
+  }, [sortedNgos, selectedType, selectedSector, interestedOnly, isInterested, query]);
 
   const openWebsite = useCallback((url: string, title: string) => {
     if (!url) return;
@@ -494,6 +518,14 @@ export default function NgosScreen() {
           </View>
         ) : null}
 
+        <TouchableOpacity
+          style={[styles.interestedToggle, interestedOnly && styles.interestedToggleActive]}
+          onPress={() => setInterestedOnly((v) => !v)}
+        >
+          <Heart size={13} color={interestedOnly ? '#fff' : colors.textLight} fill={interestedOnly ? '#fff' : 'none'} />
+          <Text style={[styles.interestedToggleText, interestedOnly && styles.interestedToggleTextActive]}>Interested</Text>
+        </TouchableOpacity>
+
         {isLoading ? (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -549,6 +581,9 @@ export default function NgosScreen() {
                       </View>
                       <ChevronRight size={16} color={colors.textLight} />
                     </PressableScale>
+                    <View style={styles.interestCorner} pointerEvents="box-none">
+                      <InterestButton interested={isInterested(ngo.id)} onToggle={() => toggleInterested(ngo.id)} color={ACCENT} />
+                    </View>
 
                     <View style={styles.cardBadges}>
                       {ngo.ngoType ? (
@@ -647,6 +682,8 @@ export default function NgosScreen() {
         onClose={() => setSelectedNgo(null)}
         onViewJobs={openNgoJobs}
         onOpenLink={openWebsite}
+        isInterested={selectedNgo ? isInterested(selectedNgo.id) : false}
+        onToggleInterested={() => selectedNgo && toggleInterested(selectedNgo.id)}
       />
     </SafeAreaView>
   );
@@ -742,6 +779,30 @@ const styles = createThemedStyles((c) => ({
   chipTextActive: {
     color: '#fff',
   },
+  interestedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  interestedToggleActive: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  interestedToggleText: {
+    color: c.textLight,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  interestedToggleTextActive: {
+    color: '#fff',
+  },
   centerBox: {
     alignItems: 'center',
     paddingVertical: 48,
@@ -778,6 +839,7 @@ const styles = createThemedStyles((c) => ({
     gap: spacing.md,
   },
   card: {
+    position: 'relative',
     backgroundColor: c.surface,
     borderWidth: 1,
     borderColor: c.border,
@@ -786,10 +848,16 @@ const styles = createThemedStyles((c) => ({
     gap: 8,
     ...elevation('md'),
   },
+  interestCorner: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+    paddingRight: 36,
   },
   logo: {
     width: 40,

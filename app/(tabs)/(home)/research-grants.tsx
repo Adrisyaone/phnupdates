@@ -12,10 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Banknote, Calendar, CheckCircle2, ChevronDown, ChevronRight, Clock, ExternalLink, FlaskConical, Globe2, Mail, MapPin, X, XCircle } from 'lucide-react-native';
+import { Banknote, Calendar, CheckCircle2, ChevronDown, ChevronRight, Clock, ExternalLink, FlaskConical, Globe2, Heart, Mail, MapPin, X, XCircle } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
-import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
+import { AnimatedEntrance, AuroraBackground, InterestButton, PressableScale } from '@/components/ui';
 import {
   formatResearchDate,
   isResearchDeadlinePassed,
@@ -23,6 +23,7 @@ import {
   loadResearchGrants,
   ResearchOpportunity,
 } from '@/services/researchGrants';
+import { useInterested } from '@/services/interests';
 
 const ALL_FILTER = 'All';
 
@@ -91,11 +92,15 @@ function ResearchDetailModal({
   visible,
   onClose,
   onOpenWebsite,
+  isInterested,
+  onToggleInterested,
 }: {
   opportunity: ResearchOpportunity | null;
   visible: boolean;
   onClose: () => void;
   onOpenWebsite: (url: string, title: string) => void;
+  isInterested: boolean;
+  onToggleInterested: () => void;
 }) {
   if (!opportunity) return null;
 
@@ -148,6 +153,7 @@ function ResearchDetailModal({
         <View style={modalStyles.card}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.headerTitle} numberOfLines={2}>{opportunity.title}</Text>
+            <InterestButton interested={isInterested} onToggle={onToggleInterested} color={ACCENT} size={32} />
             <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
               <X size={18} color={colors.text} />
             </TouchableOpacity>
@@ -318,6 +324,8 @@ export default function ResearchGrantsScreen() {
   const [fundedOnly, setFundedOnly] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<ResearchOpportunity | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+  const [interestedOnly, setInterestedOnly] = useState(false);
+  const { isInterested, toggleInterested } = useInterested('research');
 
   const openWebsite = useCallback((url: string, title: string) => {
     if (!url) return;
@@ -351,10 +359,11 @@ export default function ResearchGrantsScreen() {
     return opportunities.filter((o) => {
       if (selectedType !== ALL_FILTER && o.type !== selectedType) return false;
       if (fundedOnly && !isYes(o.isFunded || '')) return false;
+      if (interestedOnly && !isInterested(o.id)) return false;
       if (!showExpired && isResearchDeadlinePassed(o.applicationDeadline)) return false;
       return true;
     });
-  }, [opportunities, selectedType, fundedOnly, showExpired]);
+  }, [opportunities, selectedType, fundedOnly, interestedOnly, isInterested, showExpired]);
 
   const expiredCount = useMemo(
     () => opportunities.filter((o) => isResearchDeadlinePassed(o.applicationDeadline)).length,
@@ -424,6 +433,14 @@ export default function ResearchGrantsScreen() {
             <Text style={[styles.expiredToggleText, fundedOnly && styles.expiredToggleTextActive]}>Funded only</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={[styles.expiredToggle, interestedOnly && styles.expiredToggleActive]}
+            onPress={() => setInterestedOnly((v) => !v)}
+          >
+            <Heart size={13} color={interestedOnly ? '#fff' : colors.textLight} fill={interestedOnly ? '#fff' : 'none'} />
+            <Text style={[styles.expiredToggleText, interestedOnly && styles.expiredToggleTextActive]}>Interested</Text>
+          </TouchableOpacity>
+
           {expiredCount > 0 ? (
             <TouchableOpacity style={styles.expiredToggle} onPress={() => setShowExpired((v) => !v)}>
               <Clock size={13} color={colors.textLight} />
@@ -475,6 +492,7 @@ export default function ResearchGrantsScreen() {
               const funded = isYes(opportunity.isFunded || '');
               return (
                 <AnimatedEntrance key={opportunity.id} index={Math.min(index, 8)} from="up">
+                <View style={styles.cardWrap}>
                 <PressableScale
                   style={[styles.card, passed && styles.cardExpired]}
                   onPress={() => setSelectedOpportunity(opportunity)}
@@ -517,6 +535,10 @@ export default function ResearchGrantsScreen() {
                     ) : null}
                   </View>
                 </PressableScale>
+                <View style={styles.interestCorner} pointerEvents="box-none">
+                  <InterestButton interested={isInterested(opportunity.id)} onToggle={() => toggleInterested(opportunity.id)} color={ACCENT} />
+                </View>
+                </View>
                 </AnimatedEntrance>
               );
             })}
@@ -529,6 +551,8 @@ export default function ResearchGrantsScreen() {
         visible={selectedOpportunity !== null}
         onClose={() => setSelectedOpportunity(null)}
         onOpenWebsite={openWebsite}
+        isInterested={selectedOpportunity ? isInterested(selectedOpportunity.id) : false}
+        onToggleInterested={() => selectedOpportunity && toggleInterested(selectedOpportunity.id)}
       />
     </SafeAreaView>
   );
@@ -672,6 +696,14 @@ const styles = createThemedStyles((c) => ({
   list: {
     gap: spacing.md,
   },
+  cardWrap: {
+    position: 'relative',
+  },
+  interestCorner: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
   card: {
     backgroundColor: c.surface,
     borderWidth: 1,
@@ -688,6 +720,7 @@ const styles = createThemedStyles((c) => ({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+    paddingRight: 36,
   },
   iconWrap: {
     width: 40,
