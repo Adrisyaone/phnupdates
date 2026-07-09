@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -22,8 +24,10 @@ import {
   Facebook,
   Globe,
   Heart,
+  Linkedin,
   Mail,
   MapPin,
+  MapPinned,
   Phone,
   Search,
   X,
@@ -31,7 +35,7 @@ import {
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
 import { AnimatedEntrance, AuroraBackground, InterestButton, PressableScale } from '@/components/ui';
-import { loadNgos, Ngo, normalizeOrgName } from '@/services/ngos';
+import { loadNgos, Ngo, normalizeOrgName, parseLocationGps } from '@/services/ngos';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 import { useInterested } from '@/services/interests';
 
@@ -61,6 +65,7 @@ function NgoDetailModal({
   onClose,
   onViewJobs,
   onOpenLink,
+  onOpenMap,
   isInterested,
   onToggleInterested,
 }: {
@@ -70,12 +75,14 @@ function NgoDetailModal({
   onClose: () => void;
   onViewJobs: (ngo: Ngo) => void;
   onOpenLink: (url: string, title: string) => void;
+  onOpenMap: (ngo: Ngo) => void;
   isInterested: boolean;
   onToggleInterested: () => void;
 }) {
   if (!ngo) return null;
 
   const location = [ngo.officeLocation, ngo.headquarters].filter(Boolean).join(' · ');
+  const hasGps = !!parseLocationGps(ngo.locationGps);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -123,8 +130,8 @@ function NgoDetailModal({
               </View>
             ) : null}
 
-            {(ngo.website || ngo.facebook) ? (
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+            {(ngo.website || ngo.facebook || ngo.linkedin) ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 {ngo.website ? (
                   <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.website, ngo.name)}>
                     <Globe size={14} color={ACCENT} />
@@ -137,7 +144,20 @@ function NgoDetailModal({
                     <Text style={modalStyles.linkButtonText} numberOfLines={1}>Facebook</Text>
                   </TouchableOpacity>
                 ) : null}
+                {ngo.linkedin ? (
+                  <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.linkedin, `${ngo.name} · LinkedIn`)}>
+                    <Linkedin size={14} color={ACCENT} />
+                    <Text style={modalStyles.linkButtonText} numberOfLines={1}>LinkedIn</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
+            ) : null}
+
+            {hasGps ? (
+              <TouchableOpacity style={modalStyles.mapButton} onPress={() => onOpenMap(ngo)}>
+                <MapPinned size={14} color="#fff" />
+                <Text style={modalStyles.mapButtonText}>View on Map</Text>
+              </TouchableOpacity>
             ) : null}
 
             <View style={modalStyles.divider} />
@@ -300,6 +320,21 @@ const modalStyles = {
     fontSize: 12,
     fontWeight: '600' as const,
   },
+  mapButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    backgroundColor: ACCENT,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  mapButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
   jobRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -393,19 +428,19 @@ export default function NgosScreen() {
     return [ALL_FILTER, ...Array.from(set)];
   }, [ngos]);
 
-  const activeJobCountFor = useCallback((ngo: Ngo) => {
-    const jobs = jobsByOrg.get(normalizeOrgName(ngo.name)) || [];
-    return jobs.filter((j) => !isDeadlinePassed(j.applicationDeadline)).length;
+  const hasAnyJobsFor = useCallback((ngo: Ngo) => {
+    return (jobsByOrg.get(normalizeOrgName(ngo.name)) || []).length > 0;
   }, [jobsByOrg]);
 
-  // Organizations with open jobs surface first; order is otherwise preserved.
+  // Organizations with job postings (active or expired) surface first;
+  // order is otherwise preserved.
   const sortedNgos = useMemo(() => {
     return [...ngos].sort((a, b) => {
-      const aHasJobs = activeJobCountFor(a) > 0 ? 1 : 0;
-      const bHasJobs = activeJobCountFor(b) > 0 ? 1 : 0;
+      const aHasJobs = hasAnyJobsFor(a) ? 1 : 0;
+      const bHasJobs = hasAnyJobsFor(b) ? 1 : 0;
       return bHasJobs - aHasJobs;
     });
-  }, [ngos, activeJobCountFor]);
+  }, [ngos, hasAnyJobsFor]);
 
   const filteredNgos = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -428,6 +463,30 @@ export default function NgosScreen() {
       params: { url: normalizeUrl(url), title },
     });
   }, [router]);
+
+  const openMap = useCallback((ngo: Ngo) => {
+    const coords = parseLocationGps(ngo.locationGps);
+    if (!coords) return;
+    const { latitude, longitude } = coords;
+    const label = encodeURIComponent(ngo.name);
+    const webUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    const nativeUrl = Platform.select({
+      ios: `maps:0,0?q=${label}@${latitude},${longitude}`,
+      android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`,
+    });
+
+    const openWeb = () => {
+      void Linking.openURL(webUrl).catch((error) => {
+        console.log('[Organizations] Failed to open map:', error);
+      });
+    };
+
+    if (nativeUrl) {
+      Linking.openURL(nativeUrl).catch(openWeb);
+    } else {
+      openWeb();
+    }
+  }, []);
 
   const openNgoJobs = useCallback((ngo: Ngo) => {
     setSelectedNgo(null);
@@ -614,7 +673,7 @@ export default function NgosScreen() {
                       </View>
                     ) : null}
 
-                    {(ngo.website || ngo.facebook) ? (
+                    {(ngo.website || ngo.facebook || ngo.linkedin || parseLocationGps(ngo.locationGps)) ? (
                       <View style={styles.linksRow}>
                         {ngo.website ? (
                           <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.website, ngo.name)}>
@@ -626,6 +685,18 @@ export default function NgosScreen() {
                           <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.facebook, `${ngo.name} · Facebook`)}>
                             <Facebook size={13} color={ACCENT} />
                             <Text style={styles.linkBtnText} numberOfLines={1}>Facebook</Text>
+                          </PressableScale>
+                        ) : null}
+                        {ngo.linkedin ? (
+                          <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.linkedin, `${ngo.name} · LinkedIn`)}>
+                            <Linkedin size={13} color={ACCENT} />
+                            <Text style={styles.linkBtnText} numberOfLines={1}>LinkedIn</Text>
+                          </PressableScale>
+                        ) : null}
+                        {parseLocationGps(ngo.locationGps) ? (
+                          <PressableScale style={styles.linkBtn} onPress={() => openMap(ngo)}>
+                            <MapPinned size={13} color={ACCENT} />
+                            <Text style={styles.linkBtnText} numberOfLines={1}>Map</Text>
                           </PressableScale>
                         ) : null}
                       </View>
@@ -682,6 +753,7 @@ export default function NgosScreen() {
         onClose={() => setSelectedNgo(null)}
         onViewJobs={openNgoJobs}
         onOpenLink={openWebsite}
+        onOpenMap={openMap}
         isInterested={selectedNgo ? isInterested(selectedNgo.id) : false}
         onToggleInterested={() => selectedNgo && toggleInterested(selectedNgo.id)}
       />
@@ -947,6 +1019,7 @@ const styles = createThemedStyles((c) => ({
   },
   linksRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   linkBtn: {

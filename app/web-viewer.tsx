@@ -8,10 +8,11 @@ import {
   Platform,
   Share,
   Alert,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Share2, Globe } from 'lucide-react-native';
+import { X, Share2, Globe, ExternalLink, RefreshCw } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 
 const BLOCKED_AD_HOST_PATTERNS = [
@@ -208,15 +209,11 @@ function isYouTubeUrl(rawUrl: string): boolean {
   }
 }
 
-function isGoogleSearchUrl(rawUrl: string): boolean {
-  try {
-    const parsed = new URL(rawUrl);
-    const host = parsed.hostname.toLowerCase();
-    return (host === 'google.com' || host.endsWith('.google.com')) && parsed.pathname === '/search';
-  } catch {
-    return false;
-  }
-}
+// A standard mobile Chrome UA — many sites (Google Forms/Sign-In, university
+// portals, application forms) reject the default Android WebView UA
+// ("...wv...") with an "unsupported browser" page, so every page loads with
+// this UA rather than only YouTube/Google Search.
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
 
 let WebView: any = null;
 if (Platform.OS !== 'web') {
@@ -235,15 +232,22 @@ export default function WebViewerScreen() {
   const safeUrl = useMemo(() => normalizeWebUrl(decodeParamValue(rawUrl)), [rawUrl]);
   const viewerUrl = useMemo(() => toInAppUrl(safeUrl), [safeUrl]);
   const isYouTube = useMemo(() => isYouTubeUrl(safeUrl), [safeUrl]);
-  const isGoogleSearch = useMemo(() => isGoogleSearchUrl(safeUrl), [safeUrl]);
   const safeTitle = Array.isArray(title) ? (title[0] || '') : (title || '');
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState(viewerUrl);
   const [pageTitle, setPageTitle] = useState(safeTitle);
   const [adBlockEnabled, setAdBlockEnabled] = useState(shouldEnableAdBlockForUrl(safeUrl));
   const [adBlockFallbackUsed, setAdBlockFallbackUsed] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const webViewRef = React.useRef<any>(null);
   const hasRetriedSecureRef = React.useRef(false);
+
+  const openExternally = useCallback(() => {
+    if (!safeUrl) return;
+    void Linking.openURL(safeUrl).catch((error) => {
+      console.log('[WebViewer] Failed to open externally:', error);
+    });
+  }, [safeUrl]);
 
   const toSecureUrl = useCallback((candidate: string): string => {
     if (!candidate) return '';
@@ -288,8 +292,26 @@ export default function WebViewerScreen() {
 
     if (currentUrl !== safeUrl) {
       setCurrentUrl(safeUrl);
+      return;
     }
+
+    // Out of automatic recovery options — let the user know instead of
+    // leaving them staring at a blank page.
+    setLoadFailed(true);
   }, [adBlockEnabled, adBlockFallbackUsed, currentUrl, safeUrl, toSecureUrl]);
+
+  const retryLoad = useCallback(() => {
+    hasRetriedSecureRef.current = false;
+    setLoadFailed(false);
+    setCurrentUrl(viewerUrl);
+    setTimeout(() => {
+      try {
+        webViewRef.current?.reload();
+      } catch {
+        // No-op: reload is best-effort.
+      }
+    }, 0);
+  }, [viewerUrl]);
 
   const handleClose = useCallback(() => {
     try {
@@ -300,23 +322,24 @@ export default function WebViewerScreen() {
   }, [router]);
 
   const handleShare = useCallback(async () => {
-    if (!url) return;
+    if (!safeUrl) return;
     try {
       await Share.share({
-        url: url,
-        message: Platform.OS === 'android' ? url : undefined,
+        url: safeUrl,
+        message: Platform.OS === 'android' ? safeUrl : undefined,
         title: pageTitle || 'Shared Link',
       });
     } catch (error) {
       console.log('[WebViewer] Share error:', error);
     }
-  }, [url, pageTitle]);
+  }, [safeUrl, pageTitle]);
 
   React.useEffect(() => {
     hasRetriedSecureRef.current = false;
     setCurrentUrl(viewerUrl);
     setAdBlockEnabled(shouldEnableAdBlockForUrl(viewerUrl));
     setAdBlockFallbackUsed(false);
+    setLoadFailed(false);
   }, [viewerUrl]);
 
   React.useEffect(() => {
@@ -337,6 +360,9 @@ export default function WebViewerScreen() {
                 {pageTitle || url || 'Web Page'}
               </Text>
             </View>
+            <TouchableOpacity style={styles.shareButton} onPress={openExternally}>
+              <ExternalLink size={18} color={colors.text} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
               <Share2 size={20} color={colors.text} />
             </TouchableOpacity>
@@ -399,7 +425,10 @@ export default function WebViewerScreen() {
           : { uri: currentUrl || '' }}
         originWhitelist={['*']}
         style={styles.webview}
-        onLoadStart={() => setLoading(true)}
+        onLoadStart={() => {
+          setLoading(true);
+          setLoadFailed(false);
+        }}
         onLoadEnd={() => setLoading(false)}
         onNavigationStateChange={(navState: any) => {
           if (navState.title && navState.title !== url) {
@@ -410,7 +439,14 @@ export default function WebViewerScreen() {
         injectedJavaScriptBeforeContentLoaded={adBlockEnabled ? AD_BLOCK_INJECTED_SCRIPT : undefined}
         domStorageEnabled
         mixedContentMode="always"
-        setSupportMultipleWindows={false}
+        setSupportMultipleWindows
+        onOpenWindow={(event: any) => {
+          // Sites that use window.open()/target="_blank" (application forms,
+          // sign-in popups, "open PDF" links) would otherwise silently do
+          // nothing — route the new-window request into this same WebView.
+          const targetUrl = event?.nativeEvent?.targetUrl;
+          if (targetUrl) setCurrentUrl(targetUrl);
+        }}
         onShouldStartLoadWithRequest={(request: any) => {
           if (!adBlockEnabled) return true;
           const requestUrl = request?.url || '';
@@ -430,10 +466,28 @@ export default function WebViewerScreen() {
         )}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
-        userAgent={isYouTube || isGoogleSearch
-          ? 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
-          : undefined}
+        userAgent={BROWSER_USER_AGENT}
       />
+
+      {loadFailed && (
+        <View style={styles.loadErrorOverlay}>
+          <Globe size={36} color={colors.textSecondary} />
+          <Text style={styles.loadErrorTitle}>Couldn't load this page</Text>
+          <Text style={styles.loadErrorText}>
+            The site may be blocking in-app browsers, or your connection may have dropped.
+          </Text>
+          <View style={styles.loadErrorActions}>
+            <TouchableOpacity style={styles.retryBtn} onPress={retryLoad}>
+              <RefreshCw size={16} color="#fff" />
+              <Text style={styles.retryBtnText}>Try Again</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.openExternalBtn} onPress={openExternally}>
+              <ExternalLink size={16} color={colors.primary} />
+              <Text style={styles.openExternalBtnText}>Open in Browser</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -515,6 +569,10 @@ const styles = createThemedStyles((colors) => ({
     marginBottom: 16,
   },
   retryBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -522,6 +580,47 @@ const styles = createThemedStyles((colors) => ({
   },
   retryBtnText: {
     color: '#fff',
+    fontWeight: '600' as const,
+    fontSize: 15,
+  },
+  loadErrorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.surface,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 32,
+    gap: 8,
+  },
+  loadErrorTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginTop: 8,
+  },
+  loadErrorText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center' as const,
+    marginBottom: 8,
+  },
+  loadErrorActions: {
+    flexDirection: 'row' as const,
+    gap: 10,
+  },
+  openExternalBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  openExternalBtnText: {
+    color: colors.primary,
     fontWeight: '600' as const,
     fontSize: 15,
   },

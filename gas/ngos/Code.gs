@@ -28,6 +28,8 @@ var HEADER_MAP = {
   'Contact Email': 'contactEmail',
   'Contact Phone': 'contactPhone',
   'Facebook Page': 'facebook',
+  'Linkedin': 'linkedin',
+  'Location gps': 'locationGps',
 };
 
 function doGet(e) {

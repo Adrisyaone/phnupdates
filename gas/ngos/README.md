@@ -11,8 +11,10 @@ Create a new Google Sheet with a single tab named exactly `NGOs`, and this
 header row (row 1), in this order:
 
 ```
-Timestamp | NGO Name | Logo URL | NGO Type | Sector / Focus Area | Website | Headquarters | Nepal Office Location | Established Year | About / Description | Key Programs | Contact Email | Contact Phone | Facebook Page
+Timestamp | NGO Name | Logo URL | NGO Type | Sector / Focus Area | Website | Headquarters | Nepal Office Location | Established Year | About / Description | Key Programs | Contact Email | Contact Phone | Facebook Page | Linkedin | Location gps
 ```
+
+`Location gps` should hold `latitude,longitude` (e.g. `27.7172,85.3240`) — the app parses this to link out to Maps.
 
 The Apps Script trims stray whitespace around header text, so small
 copy-paste spacing differences are fine — but the words themselves must match.
