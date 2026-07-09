@@ -3,6 +3,7 @@ export { FloatingParticles } from './FloatingParticles';
 export { AuroraBackground } from './AuroraBackground';
 export { PressableScale } from './PressableScale';
 export { InterestButton } from './InterestButton';
+export { MapPreview } from './MapPreview';
 export { AnimatedEntrance } from './AnimatedEntrance';
 export { GlassCard } from './GlassCard';
 export { SectionHeader } from './SectionHeader';

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
-import { AnimatedEntrance, AuroraBackground, InterestButton, PressableScale } from '@/components/ui';
+import { AnimatedEntrance, AuroraBackground, InterestButton, MapPreview, PressableScale } from '@/components/ui';
 import { loadNgos, Ngo, normalizeOrgName, parseLocationGps } from '@/services/ngos';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 import { useInterested } from '@/services/interests';
@@ -82,7 +82,7 @@ function NgoDetailModal({
   if (!ngo) return null;
 
   const location = [ngo.officeLocation, ngo.headquarters].filter(Boolean).join(' · ');
-  const hasGps = !!parseLocationGps(ngo.locationGps);
+  const gps = parseLocationGps(ngo.locationGps);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -153,11 +153,14 @@ function NgoDetailModal({
               </View>
             ) : null}
 
-            {hasGps ? (
-              <TouchableOpacity style={modalStyles.mapButton} onPress={() => onOpenMap(ngo)}>
-                <MapPinned size={14} color="#fff" />
-                <Text style={modalStyles.mapButtonText}>View on Map</Text>
-              </TouchableOpacity>
+            {gps ? (
+              <View style={{ marginTop: 12, gap: 8 }}>
+                <MapPreview latitude={gps.latitude} longitude={gps.longitude} height={180} />
+                <TouchableOpacity style={modalStyles.mapButton} onPress={() => onOpenMap(ngo)}>
+                  <MapPinned size={14} color="#fff" />
+                  <Text style={modalStyles.mapButtonText}>Open in Maps</Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
 
             <View style={modalStyles.divider} />
