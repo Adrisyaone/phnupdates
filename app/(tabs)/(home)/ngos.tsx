@@ -2,28 +2,329 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Linking,
+  Modal,
   RefreshControl,
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Briefcase, Building2, ChevronRight, Facebook, Globe, MapPin, Search } from 'lucide-react-native';
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  ChevronRight,
+  ExternalLink,
+  Facebook,
+  Globe,
+  Mail,
+  MapPin,
+  Phone,
+  Search,
+  X,
+} from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
 import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components/ui';
 import { loadNgos, Ngo, normalizeOrgName } from '@/services/ngos';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 
-function openLink(url: string) {
-  if (!url) return;
-  const href = url.startsWith('http') ? url : `https://${url}`;
-  void Linking.openURL(href);
+function normalizeUrl(url: string): string {
+  return url.startsWith('http') ? url : `https://${url}`;
 }
+
+function InfoRow({ icon, text }: { icon: React.ReactNode; text: string }) {
+  if (!text) return null;
+  return (
+    <View style={modalStyles.infoRow}>
+      <View style={{ marginTop: 2 }}>{icon}</View>
+      <Text style={modalStyles.infoRowText}>{text}</Text>
+    </View>
+  );
+}
+
+function NgoDetailModal({
+  ngo,
+  jobs,
+  visible,
+  onClose,
+  onViewJobs,
+  onOpenLink,
+}: {
+  ngo: Ngo | null;
+  jobs: JobPosting[];
+  visible: boolean;
+  onClose: () => void;
+  onViewJobs: (ngo: Ngo) => void;
+  onOpenLink: (url: string, title: string) => void;
+}) {
+  if (!ngo) return null;
+
+  const location = [ngo.officeLocation, ngo.headquarters].filter(Boolean).join(' · ');
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={modalStyles.backdrop}>
+        <View style={modalStyles.card}>
+          <View style={modalStyles.header}>
+            {ngo.logo ? (
+              <Image source={{ uri: ngo.logo }} style={modalStyles.headerLogo} />
+            ) : (
+              <View style={modalStyles.headerLogoFallback}>
+                <Building2 size={20} color={colors.primary} />
+              </View>
+            )}
+            <Text style={modalStyles.headerTitle} numberOfLines={2}>{ngo.name}</Text>
+            <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
+              <X size={18} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={modalStyles.content} showsVerticalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {ngo.ngoType ? <View style={styles.badge}><Text style={styles.badgeText}>{ngo.ngoType}</Text></View> : null}
+              {ngo.sector ? <View style={[styles.badge, styles.badgeAlt]}><Text style={[styles.badgeText, styles.badgeTextAlt]}>{ngo.sector}</Text></View> : null}
+              {ngo.establishedYear ? <View style={[styles.badge, styles.badgeMuted]}><Text style={[styles.badgeText, styles.badgeTextMuted]}>Est. {ngo.establishedYear}</Text></View> : null}
+            </View>
+
+            <View style={{ gap: 4, marginTop: 10 }}>
+              <InfoRow icon={<MapPin size={13} color={colors.textLight} />} text={location} />
+              <InfoRow icon={<Mail size={13} color={colors.textLight} />} text={ngo.contactEmail} />
+              <InfoRow icon={<Phone size={13} color={colors.textLight} />} text={ngo.contactPhone} />
+            </View>
+
+            {ngo.description ? (
+              <View style={modalStyles.section}>
+                <Text style={modalStyles.sectionTitle}>About</Text>
+                <Text style={modalStyles.sectionText}>{ngo.description}</Text>
+              </View>
+            ) : null}
+
+            {ngo.keyPrograms ? (
+              <View style={modalStyles.section}>
+                <Text style={modalStyles.sectionTitle}>Key Programs</Text>
+                <Text style={modalStyles.sectionText}>{ngo.keyPrograms}</Text>
+              </View>
+            ) : null}
+
+            {(ngo.website || ngo.facebook) ? (
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {ngo.website ? (
+                  <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.website, ngo.name)}>
+                    <Globe size={14} color={colors.primary} />
+                    <Text style={modalStyles.linkButtonText} numberOfLines={1}>Website</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {ngo.facebook ? (
+                  <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.facebook, `${ngo.name} · Facebook`)}>
+                    <Facebook size={14} color={colors.primary} />
+                    <Text style={modalStyles.linkButtonText} numberOfLines={1}>Facebook</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+
+            <View style={modalStyles.divider} />
+
+            <Text style={modalStyles.sectionTitle}>
+              {jobs.length > 0 ? `Jobs at this organization (${jobs.length})` : 'Jobs at this organization'}
+            </Text>
+
+            {jobs.length > 0 ? (
+              <View style={{ gap: 8, marginTop: 8 }}>
+                {jobs.map((job) => {
+                  const passed = isDeadlinePassed(job.applicationDeadline);
+                  const deadline = formatDeadline(job.applicationDeadline);
+                  return (
+                    <TouchableOpacity
+                      key={job.id}
+                      style={[modalStyles.jobRow, passed && { opacity: 0.6 }]}
+                      onPress={() => onViewJobs(ngo)}
+                    >
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={modalStyles.jobRowTitle} numberOfLines={1}>{job.jobTitle}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          {job.jobType ? <Text style={modalStyles.jobRowSub}>{job.jobType}</Text> : null}
+                          {deadline ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                              <Calendar size={10} color={passed ? colors.error : colors.textLight} />
+                              <Text style={[modalStyles.jobRowSub, passed && { color: colors.error }]}>
+                                {passed ? `Expired ${deadline}` : deadline}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      </View>
+                      <ChevronRight size={16} color={colors.textLight} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={modalStyles.sectionText}>No jobs found for this organization yet.</Text>
+            )}
+
+            {jobs.length > 0 ? (
+              <TouchableOpacity style={modalStyles.viewAllButton} onPress={() => onViewJobs(ngo)}>
+                <ExternalLink size={14} color="#fff" />
+                <Text style={modalStyles.viewAllButtonText}>View in Job Portal</Text>
+              </TouchableOpacity>
+            ) : null}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const modalStyles = {
+  backdrop: {
+    flex: 1,
+    backgroundColor: '#00000066',
+    justifyContent: 'flex-end' as const,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
+    maxHeight: '90%' as const,
+  },
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceAlt,
+  },
+  headerLogoFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.primary + '18',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  headerTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700' as const,
+    lineHeight: 20,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    flexShrink: 0 as const,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  infoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: 6,
+    marginTop: 2,
+  },
+  infoRowText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  section: {
+    gap: 4,
+    marginTop: 12,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  sectionText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 14,
+  },
+  linkButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  linkButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  jobRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  jobRowTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  jobRowSub: {
+    color: colors.textLight,
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  viewAllButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 14,
+  },
+  viewAllButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+};
 
 const ALL_FILTER = 'All';
 
@@ -36,6 +337,7 @@ export default function NgosScreen() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>(ALL_FILTER);
+  const [selectedNgo, setSelectedNgo] = useState<Ngo | null>(null);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -48,7 +350,6 @@ export default function NgosScreen() {
 
     const byOrg = new Map<string, JobPosting[]>();
     for (const job of jobsResult.jobs) {
-      if (isDeadlinePassed(job.applicationDeadline)) continue;
       const key = normalizeOrgName(job.organization || '');
       if (!key) continue;
       const list = byOrg.get(key) || [];
@@ -84,12 +385,29 @@ export default function NgosScreen() {
     });
   }, [ngos, selectedSector, query]);
 
+  const openWebsite = useCallback((url: string, title: string) => {
+    if (!url) return;
+    router.push({
+      pathname: '/web-viewer',
+      params: { url: normalizeUrl(url), title },
+    });
+  }, [router]);
+
   const openNgoJobs = useCallback((ngo: Ngo) => {
+    setSelectedNgo(null);
     router.push({
       pathname: '/(tabs)/(home)/job-portal',
       params: { organization: ngo.name },
     });
   }, [router]);
+
+  const activeJobCount = useMemo(() => {
+    let total = 0;
+    for (const jobs of jobsByOrg.values()) {
+      total += jobs.filter((j) => !isDeadlinePassed(j.applicationDeadline)).length;
+    }
+    return total;
+  }, [jobsByOrg]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
@@ -112,7 +430,7 @@ export default function NgosScreen() {
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryNum}>{Array.from(jobsByOrg.values()).reduce((sum, jobs) => sum + jobs.length, 0)}</Text>
+            <Text style={styles.summaryNum}>{activeJobCount}</Text>
             <Text style={styles.summaryLabel}>Open Jobs</Text>
           </View>
         </LinearGradient>
@@ -177,12 +495,13 @@ export default function NgosScreen() {
         {!isLoading ? (
           <View style={styles.list}>
             {filteredNgos.map((ngo, index) => {
-              const matchedJobs = jobsByOrg.get(normalizeOrgName(ngo.name)) || [];
+              const allJobs = jobsByOrg.get(normalizeOrgName(ngo.name)) || [];
+              const matchedJobs = allJobs.filter((j) => !isDeadlinePassed(j.applicationDeadline));
               const location = [ngo.officeLocation, ngo.headquarters].filter(Boolean).join(' · ');
               return (
                 <AnimatedEntrance key={ngo.id} index={Math.min(index, 8)} from="up">
                   <View style={styles.card}>
-                    <View style={styles.cardTop}>
+                    <PressableScale style={styles.cardTop} onPress={() => setSelectedNgo(ngo)} activeScale={0.99}>
                       {ngo.logo ? (
                         <Image source={{ uri: ngo.logo }} style={styles.logo} />
                       ) : (
@@ -199,7 +518,8 @@ export default function NgosScreen() {
                           </View>
                         ) : null}
                       </View>
-                    </View>
+                      <ChevronRight size={16} color={colors.textLight} />
+                    </PressableScale>
 
                     <View style={styles.cardBadges}>
                       {ngo.ngoType ? (
@@ -233,13 +553,13 @@ export default function NgosScreen() {
                     {(ngo.website || ngo.facebook) ? (
                       <View style={styles.linksRow}>
                         {ngo.website ? (
-                          <PressableScale style={styles.linkBtn} onPress={() => openLink(ngo.website)}>
+                          <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.website, ngo.name)}>
                             <Globe size={13} color={colors.primary} />
                             <Text style={styles.linkBtnText} numberOfLines={1}>Website</Text>
                           </PressableScale>
                         ) : null}
                         {ngo.facebook ? (
-                          <PressableScale style={styles.linkBtn} onPress={() => openLink(ngo.facebook)}>
+                          <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.facebook, `${ngo.name} · Facebook`)}>
                             <Facebook size={13} color={colors.primary} />
                             <Text style={styles.linkBtnText} numberOfLines={1}>Facebook</Text>
                           </PressableScale>
@@ -290,6 +610,15 @@ export default function NgosScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <NgoDetailModal
+        ngo={selectedNgo}
+        jobs={selectedNgo ? jobsByOrg.get(normalizeOrgName(selectedNgo.name)) || [] : []}
+        visible={selectedNgo !== null}
+        onClose={() => setSelectedNgo(null)}
+        onViewJobs={openNgoJobs}
+        onOpenLink={openWebsite}
+      />
     </SafeAreaView>
   );
 }
