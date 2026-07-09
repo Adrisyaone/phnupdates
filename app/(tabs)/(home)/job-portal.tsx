@@ -22,6 +22,11 @@ import { normalizeOrgName } from '@/services/ngos';
 
 const ALL_FILTER = 'All';
 
+// Page accent colors — deliberately darker than colors.primary/secondary so
+// text and icons keep sufficient contrast against light card/badge backgrounds.
+const ACCENT = '#6D28D9';
+const ACCENT_ALT = '#B45309';
+
 function Badge({ label, color }: { label: string; color: string }) {
   return (
     <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: color + '22', borderWidth: 1, borderColor: color + '55' }}>
@@ -54,10 +59,12 @@ function JobDetailModal({
   job,
   visible,
   onClose,
+  onOpenWebsite,
 }: {
   job: JobPosting | null;
   visible: boolean;
   onClose: () => void;
+  onOpenWebsite: (url: string, title: string) => void;
 }) {
   if (!job) return null;
 
@@ -85,9 +92,9 @@ function JobDetailModal({
             <Text style={modalStyles.orgName}>{job.organization}</Text>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-              {job.jobType ? <Badge label={job.jobType} color={colors.primary} /> : null}
-              {job.workArrangement ? <Badge label={job.workArrangement} color={colors.secondary} /> : null}
-              {job.companyType ? <Badge label={job.companyType} color={colors.primaryDark} /> : null}
+              {job.jobType ? <Badge label={job.jobType} color={ACCENT} /> : null}
+              {job.workArrangement ? <Badge label={job.workArrangement} color={ACCENT_ALT} /> : null}
+              {job.companyType ? <Badge label={job.companyType} color={ACCENT} /> : null}
               {deadlinePassed ? <Badge label="Deadline Passed" color={colors.error} /> : null}
             </View>
 
@@ -112,7 +119,7 @@ function JobDetailModal({
             {job.salaryRange ? (
               <View style={{ gap: 2 }}>
                 <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>Salary Range</Text>
-                <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '700' }}>{job.salaryRange}</Text>
+                <Text style={{ color: ACCENT, fontSize: 14, fontWeight: '700' }}>{job.salaryRange}</Text>
               </View>
             ) : null}
 
@@ -136,9 +143,9 @@ function JobDetailModal({
             {job.website ? (
               <TouchableOpacity
                 style={modalStyles.websiteButton}
-                onPress={() => openLink(job.website)}
+                onPress={() => onOpenWebsite(job.website, job.jobTitle)}
               >
-                <ExternalLink size={14} color={colors.primary} />
+                <ExternalLink size={14} color={ACCENT} />
                 <Text style={modalStyles.websiteButtonText}>{job.website}</Text>
               </TouchableOpacity>
             ) : null}
@@ -211,7 +218,7 @@ const modalStyles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: ACCENT,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 12,
@@ -233,7 +240,7 @@ const modalStyles = {
     marginTop: 8,
   },
   websiteButtonText: {
-    color: colors.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '600' as const,
   },
@@ -251,6 +258,12 @@ export default function JobPortalScreen() {
   const [selectedArrangement, setSelectedArrangement] = useState<string>(ALL_FILTER);
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+
+  const openWebsite = useCallback((url: string, title: string) => {
+    if (!url) return;
+    const href = url.startsWith('http') ? url : `https://${url}`;
+    router.push({ pathname: '/web-viewer', params: { url: href, title } });
+  }, [router]);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -335,7 +348,7 @@ export default function JobPortalScreen() {
 
         {organizationFilter ? (
           <View style={styles.orgFilterBanner}>
-            <Building2 size={14} color={colors.primary} />
+            <Building2 size={14} color={ACCENT} />
             <Text style={styles.orgFilterText} numberOfLines={1}>Showing jobs at {organizationFilter}</Text>
             <TouchableOpacity onPress={() => router.setParams({ organization: '' })}>
               <Text style={styles.orgFilterClear}>Clear</Text>
@@ -433,7 +446,7 @@ export default function JobPortalScreen() {
                 >
                   <View style={styles.jobCardTop}>
                     <View style={styles.jobIconWrap}>
-                      <Briefcase size={20} color={passed ? colors.textLight : colors.primary} />
+                      <Briefcase size={20} color={passed ? colors.textLight : ACCENT} />
                     </View>
                     <View style={styles.jobCardMeta}>
                       <Text style={[styles.jobTitle, passed && styles.jobTitleExpired]} numberOfLines={2}>
@@ -445,8 +458,8 @@ export default function JobPortalScreen() {
                   </View>
 
                   <View style={styles.jobCardBadges}>
-                    {job.jobType ? <Badge label={job.jobType} color={passed ? colors.textLight : colors.primary} /> : null}
-                    {job.workArrangement ? <Badge label={job.workArrangement} color={passed ? colors.textLight : colors.secondary} /> : null}
+                    {job.jobType ? <Badge label={job.jobType} color={passed ? colors.textLight : ACCENT} /> : null}
+                    {job.workArrangement ? <Badge label={job.workArrangement} color={passed ? colors.textLight : ACCENT_ALT} /> : null}
                     {passed ? <Badge label="Expired" color={colors.error} /> : null}
                   </View>
 
@@ -478,6 +491,7 @@ export default function JobPortalScreen() {
         job={selectedJob}
         visible={selectedJob !== null}
         onClose={() => setSelectedJob(null)}
+        onOpenWebsite={openWebsite}
       />
     </SafeAreaView>
   );
@@ -531,8 +545,8 @@ const styles = createThemedStyles((c) => ({
     gap: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: c.primary + '40',
-    backgroundColor: c.primary + '12',
+    borderColor: ACCENT + '40',
+    backgroundColor: ACCENT + '12',
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -543,7 +557,7 @@ const styles = createThemedStyles((c) => ({
     fontWeight: '600',
   },
   orgFilterClear: {
-    color: c.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -568,8 +582,8 @@ const styles = createThemedStyles((c) => ({
     backgroundColor: c.surface,
   },
   chipActive: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
   chipText: {
     color: c.textSecondary,
@@ -652,7 +666,7 @@ const styles = createThemedStyles((c) => ({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: c.primary + '18',
+    backgroundColor: ACCENT + '18',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

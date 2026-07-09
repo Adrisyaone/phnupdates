@@ -33,6 +33,11 @@ import { AnimatedEntrance, AuroraBackground, PressableScale } from '@/components
 import { loadNgos, Ngo, normalizeOrgName } from '@/services/ngos';
 import { formatDeadline, isDeadlinePassed, JobPosting, loadJobPostings } from '@/services/jobPortal';
 
+// Page accent colors — deliberately darker than colors.primary/secondary so
+// text and icons keep sufficient contrast against light card/badge backgrounds.
+const ACCENT = '#0E7490';
+const ACCENT_ALT = '#B45309';
+
 function normalizeUrl(url: string): string {
   return url.startsWith('http') ? url : `https://${url}`;
 }
@@ -75,7 +80,7 @@ function NgoDetailModal({
               <Image source={{ uri: ngo.logo }} style={modalStyles.headerLogo} />
             ) : (
               <View style={modalStyles.headerLogoFallback}>
-                <Building2 size={20} color={colors.primary} />
+                <Building2 size={20} color={ACCENT} />
               </View>
             )}
             <Text style={modalStyles.headerTitle} numberOfLines={2}>{ngo.name}</Text>
@@ -115,13 +120,13 @@ function NgoDetailModal({
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                 {ngo.website ? (
                   <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.website, ngo.name)}>
-                    <Globe size={14} color={colors.primary} />
+                    <Globe size={14} color={ACCENT} />
                     <Text style={modalStyles.linkButtonText} numberOfLines={1}>Website</Text>
                   </TouchableOpacity>
                 ) : null}
                 {ngo.facebook ? (
                   <TouchableOpacity style={modalStyles.linkButton} onPress={() => onOpenLink(ngo.facebook, `${ngo.name} · Facebook`)}>
-                    <Facebook size={14} color={colors.primary} />
+                    <Facebook size={14} color={ACCENT} />
                     <Text style={modalStyles.linkButtonText} numberOfLines={1}>Facebook</Text>
                   </TouchableOpacity>
                 ) : null}
@@ -217,7 +222,7 @@ const modalStyles = {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: colors.primary + '18',
+    backgroundColor: ACCENT + '18',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -284,7 +289,7 @@ const modalStyles = {
     paddingVertical: 10,
   },
   linkButtonText: {
-    color: colors.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '600' as const,
   },
@@ -314,7 +319,7 @@ const modalStyles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: ACCENT,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 14,
@@ -336,6 +341,7 @@ export default function NgosScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>(ALL_FILTER);
   const [selectedSector, setSelectedSector] = useState<string>(ALL_FILTER);
   const [selectedNgo, setSelectedNgo] = useState<Ngo | null>(null);
 
@@ -368,6 +374,11 @@ export default function NgosScreen() {
     void loadData(false);
   }, [loadData]);
 
+  const types = useMemo(() => {
+    const set = new Set(ngos.map((n) => n.ngoType).filter(Boolean));
+    return [ALL_FILTER, ...Array.from(set)];
+  }, [ngos]);
+
   const sectors = useMemo(() => {
     const set = new Set(ngos.map((n) => n.sector).filter(Boolean));
     return [ALL_FILTER, ...Array.from(set)];
@@ -376,6 +387,7 @@ export default function NgosScreen() {
   const filteredNgos = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return ngos.filter((n) => {
+      if (selectedType !== ALL_FILTER && n.ngoType !== selectedType) return false;
       if (selectedSector !== ALL_FILTER && n.sector !== selectedSector) return false;
       if (normalizedQuery) {
         const haystack = `${n.name} ${n.sector} ${n.headquarters} ${n.officeLocation}`.toLowerCase();
@@ -383,7 +395,7 @@ export default function NgosScreen() {
       }
       return true;
     });
-  }, [ngos, selectedSector, query]);
+  }, [ngos, selectedType, selectedSector, query]);
 
   const openWebsite = useCallback((url: string, title: string) => {
     if (!url) return;
@@ -426,7 +438,7 @@ export default function NgosScreen() {
         >
           <View style={styles.summaryItem}>
             <Text style={styles.summaryNum}>{ngos.length}</Text>
-            <Text style={styles.summaryLabel}>NGOs</Text>
+            <Text style={styles.summaryLabel}>Organizations</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
@@ -440,13 +452,30 @@ export default function NgosScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search NGOs by name, sector, or location"
+            placeholder="Search organizations by name, sector, or location"
             placeholderTextColor={colors.textLight}
             style={styles.searchInput}
             autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
+
+        {types.length > 1 ? (
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {types.map((type) => (
+                <PressableScale
+                  key={type}
+                  style={[styles.chip, selectedType === type && styles.chipActive]}
+                  onPress={() => setSelectedType(type)}
+                >
+                  <Text style={[styles.chipText, selectedType === type && styles.chipTextActive]}>{type}</Text>
+                </PressableScale>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
         {sectors.length > 1 ? (
           <View style={styles.filterSection}>
@@ -468,7 +497,7 @@ export default function NgosScreen() {
         {isLoading ? (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading NGOs...</Text>
+            <Text style={styles.loadingText}>Loading organizations...</Text>
           </View>
         ) : null}
 
@@ -480,14 +509,14 @@ export default function NgosScreen() {
 
         {!isLoading && !error && filteredNgos.length === 0 && ngos.length > 0 ? (
           <View style={styles.centerBox}>
-            <Text style={styles.emptyText}>No NGOs match the current filters.</Text>
+            <Text style={styles.emptyText}>No organizations match the current filters.</Text>
           </View>
         ) : null}
 
         {!isLoading && !error && ngos.length === 0 ? (
           <View style={styles.centerBox}>
             <Building2 size={40} color={colors.textLight} />
-            <Text style={styles.emptyText}>No NGOs available yet.</Text>
+            <Text style={styles.emptyText}>No organizations available yet.</Text>
             <Text style={styles.emptySubtext}>Pull down to refresh.</Text>
           </View>
         ) : null}
@@ -506,7 +535,7 @@ export default function NgosScreen() {
                         <Image source={{ uri: ngo.logo }} style={styles.logo} />
                       ) : (
                         <View style={styles.logoFallback}>
-                          <Building2 size={20} color={colors.primary} />
+                          <Building2 size={20} color={ACCENT} />
                         </View>
                       )}
                       <View style={styles.cardMeta}>
@@ -554,13 +583,13 @@ export default function NgosScreen() {
                       <View style={styles.linksRow}>
                         {ngo.website ? (
                           <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.website, ngo.name)}>
-                            <Globe size={13} color={colors.primary} />
+                            <Globe size={13} color={ACCENT} />
                             <Text style={styles.linkBtnText} numberOfLines={1}>Website</Text>
                           </PressableScale>
                         ) : null}
                         {ngo.facebook ? (
                           <PressableScale style={styles.linkBtn} onPress={() => openWebsite(ngo.facebook, `${ngo.name} · Facebook`)}>
-                            <Facebook size={13} color={colors.primary} />
+                            <Facebook size={13} color={ACCENT} />
                             <Text style={styles.linkBtnText} numberOfLines={1}>Facebook</Text>
                           </PressableScale>
                         ) : null}
@@ -572,7 +601,7 @@ export default function NgosScreen() {
                     {matchedJobs.length > 0 ? (
                       <View style={styles.jobsSection}>
                         <View style={styles.jobsSectionHeader}>
-                          <Briefcase size={13} color={colors.primary} />
+                          <Briefcase size={13} color={ACCENT} />
                           <Text style={styles.jobsSectionTitle}>
                             {matchedJobs.length} open job{matchedJobs.length === 1 ? '' : 's'}
                           </Text>
@@ -702,8 +731,8 @@ const styles = createThemedStyles((c) => ({
     backgroundColor: c.surface,
   },
   chipActive: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
   chipText: {
     color: c.textSecondary,
@@ -772,7 +801,7 @@ const styles = createThemedStyles((c) => ({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: c.primary + '18',
+    backgroundColor: ACCENT + '18',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -807,21 +836,21 @@ const styles = createThemedStyles((c) => ({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: c.primary + '18',
+    backgroundColor: ACCENT + '18',
     borderWidth: 1,
-    borderColor: c.primary + '40',
+    borderColor: ACCENT + '40',
   },
   badgeText: {
-    color: c.primary,
+    color: ACCENT,
     fontSize: 11,
     fontWeight: '700',
   },
   badgeAlt: {
-    backgroundColor: c.secondary + '18',
-    borderColor: c.secondary + '40',
+    backgroundColor: ACCENT_ALT + '18',
+    borderColor: ACCENT_ALT + '40',
   },
   badgeTextAlt: {
-    color: c.secondary,
+    color: ACCENT_ALT,
   },
   badgeMuted: {
     backgroundColor: c.surfaceAlt,
@@ -864,7 +893,7 @@ const styles = createThemedStyles((c) => ({
     paddingVertical: 6,
   },
   linkBtnText: {
-    color: c.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -883,7 +912,7 @@ const styles = createThemedStyles((c) => ({
     fontWeight: '600',
   },
   jobsTextActive: {
-    color: c.primary,
+    color: ACCENT,
   },
   jobsSection: {
     gap: 6,
@@ -894,7 +923,7 @@ const styles = createThemedStyles((c) => ({
     gap: 6,
   },
   jobsSectionTitle: {
-    color: c.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '700',
   },

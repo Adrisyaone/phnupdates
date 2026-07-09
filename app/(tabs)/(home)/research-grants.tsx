@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { Banknote, Calendar, CheckCircle2, ChevronDown, ChevronRight, Clock, ExternalLink, FlaskConical, Globe2, Mail, MapPin, X, XCircle } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
@@ -24,6 +25,11 @@ import {
 } from '@/services/researchGrants';
 
 const ALL_FILTER = 'All';
+
+// Page accent colors — deliberately darker than colors.primary/secondary so
+// text and icons keep sufficient contrast against light card/badge backgrounds.
+const ACCENT = '#0F766E';
+const ACCENT_ALT = '#B45309';
 
 function Badge({ label, color }: { label: string; color: string }) {
   return (
@@ -84,10 +90,12 @@ function ResearchDetailModal({
   opportunity,
   visible,
   onClose,
+  onOpenWebsite,
 }: {
   opportunity: ResearchOpportunity | null;
   visible: boolean;
   onClose: () => void;
+  onOpenWebsite: (url: string, title: string) => void;
 }) {
   if (!opportunity) return null;
 
@@ -149,10 +157,10 @@ function ResearchDetailModal({
             <Text style={modalStyles.orgName}>{opportunity.organization}</Text>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-              {opportunity.type ? <Badge label={opportunity.type} color={colors.primary} /> : null}
-              {opportunity.scholarshipFor ? <Badge label={opportunity.scholarshipFor} color={colors.secondary} /> : null}
-              {opportunity.mode ? <Badge label={opportunity.mode} color={colors.primaryDark} /> : null}
-              {opportunity.skillLevel ? <Badge label={opportunity.skillLevel} color={colors.primaryDark} /> : null}
+              {opportunity.type ? <Badge label={opportunity.type} color={ACCENT} /> : null}
+              {opportunity.scholarshipFor ? <Badge label={opportunity.scholarshipFor} color={ACCENT_ALT} /> : null}
+              {opportunity.mode ? <Badge label={opportunity.mode} color={ACCENT} /> : null}
+              {opportunity.skillLevel ? <Badge label={opportunity.skillLevel} color={ACCENT} /> : null}
               {fundedKnown ? <Badge label={funded ? 'Funded' : 'Unfunded'} color={funded ? (colors.success) : colors.textLight} /> : null}
               {deadlinePassed ? <Badge label="Deadline Passed" color={colors.error} /> : null}
             </View>
@@ -197,9 +205,9 @@ function ResearchDetailModal({
             {opportunity.website ? (
               <TouchableOpacity
                 style={modalStyles.websiteButton}
-                onPress={() => openLink(opportunity.website)}
+                onPress={() => onOpenWebsite(opportunity.website, opportunity.title)}
               >
-                <ExternalLink size={14} color={colors.primary} />
+                <ExternalLink size={14} color={ACCENT} />
                 <Text style={modalStyles.websiteButtonText}>{opportunity.website}</Text>
               </TouchableOpacity>
             ) : null}
@@ -272,7 +280,7 @@ const modalStyles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: ACCENT,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 12,
@@ -294,13 +302,14 @@ const modalStyles = {
     marginTop: 8,
   },
   websiteButtonText: {
-    color: colors.primary,
+    color: ACCENT,
     fontSize: 12,
     fontWeight: '600' as const,
   },
 };
 
 export default function ResearchGrantsScreen() {
+  const router = useRouter();
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -309,6 +318,12 @@ export default function ResearchGrantsScreen() {
   const [fundedOnly, setFundedOnly] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<ResearchOpportunity | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+
+  const openWebsite = useCallback((url: string, title: string) => {
+    if (!url) return;
+    const href = url.startsWith('http') ? url : `https://${url}`;
+    router.push({ pathname: '/web-viewer', params: { url: href, title } });
+  }, [router]);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -467,7 +482,7 @@ export default function ResearchGrantsScreen() {
                 >
                   <View style={styles.cardTop}>
                     <View style={styles.iconWrap}>
-                      <FlaskConical size={20} color={passed ? colors.textLight : colors.primary} />
+                      <FlaskConical size={20} color={passed ? colors.textLight : ACCENT} />
                     </View>
                     <View style={styles.cardMeta}>
                       <Text style={[styles.title, passed && styles.titleExpired]} numberOfLines={2}>
@@ -479,8 +494,8 @@ export default function ResearchGrantsScreen() {
                   </View>
 
                   <View style={styles.cardBadges}>
-                    {opportunity.type ? <Badge label={opportunity.type} color={passed ? colors.textLight : colors.primary} /> : null}
-                    {opportunity.scholarshipFor ? <Badge label={opportunity.scholarshipFor} color={passed ? colors.textLight : colors.secondary} /> : null}
+                    {opportunity.type ? <Badge label={opportunity.type} color={passed ? colors.textLight : ACCENT} /> : null}
+                    {opportunity.scholarshipFor ? <Badge label={opportunity.scholarshipFor} color={passed ? colors.textLight : ACCENT_ALT} /> : null}
                     {fundedKnown ? <Badge label={funded ? 'Funded' : 'Unfunded'} color={passed ? colors.textLight : (funded ? (colors.success) : colors.textLight)} /> : null}
                     {passed ? <Badge label="Expired" color={colors.error} /> : null}
                   </View>
@@ -513,6 +528,7 @@ export default function ResearchGrantsScreen() {
         opportunity={selectedOpportunity}
         visible={selectedOpportunity !== null}
         onClose={() => setSelectedOpportunity(null)}
+        onOpenWebsite={openWebsite}
       />
     </SafeAreaView>
   );
@@ -581,8 +597,8 @@ const styles = createThemedStyles((c) => ({
     backgroundColor: c.surface,
   },
   chipActive: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
   chipText: {
     color: c.textSecondary,
@@ -610,8 +626,8 @@ const styles = createThemedStyles((c) => ({
     backgroundColor: c.surface,
   },
   expiredToggleActive: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
   expiredToggleText: {
     color: c.textLight,
@@ -677,7 +693,7 @@ const styles = createThemedStyles((c) => ({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: c.primary + '18',
+    backgroundColor: ACCENT + '18',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

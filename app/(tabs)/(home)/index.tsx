@@ -351,7 +351,7 @@ export default function DashboardScreen() {
     },
     {
       key: 'research-grants',
-      title: 'Research Grants',
+      title: 'Research Opportunities',
       description: 'Research grants, scholarships, fellowships, and workshops.',
       color: '#0D9488',
       icon: GraduationCap,
@@ -359,8 +359,8 @@ export default function DashboardScreen() {
     },
     {
       key: 'ngos',
-      title: 'NGOs',
-      description: 'Browse NGOs and open jobs at each organization.',
+      title: 'Organizations',
+      description: 'Browse organizations and open jobs at each one.',
       color: '#0891B2',
       icon: Building2,
       onPress: () => { router.push('/(tabs)/(home)/ngos'); },
@@ -507,8 +507,9 @@ export default function DashboardScreen() {
       color: colors.primary,
       icon: Facebook,
       onPress: () => {
-        void Linking.openURL('https://www.facebook.com/phnupdates').catch((error) => {
-          console.log('[Dashboard] Failed to open Facebook page:', error);
+        router.push({
+          pathname: '/web-viewer',
+          params: { url: 'https://www.facebook.com/phnupdates', title: 'FB page' },
         });
       },
     },
@@ -549,7 +550,7 @@ export default function DashboardScreen() {
     },
     {
       title: 'Organizations in Nepal',
-      subtitle: 'NGOs and their open opportunities.',
+      subtitle: 'Organizations and their open opportunities.',
       keys: ['ngos'],
     },
     {

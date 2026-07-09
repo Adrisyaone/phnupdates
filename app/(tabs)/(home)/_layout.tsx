@@ -125,13 +125,13 @@ export default function HomeLayout() {
       <Stack.Screen
         name="research-grants"
         options={{
-          title: 'Research Grants',
+          title: 'Research Opportunities',
         }}
       />
       <Stack.Screen
         name="ngos"
         options={{
-          title: 'NGOs',
+          title: 'Organizations',
         }}
       />
     </Stack>

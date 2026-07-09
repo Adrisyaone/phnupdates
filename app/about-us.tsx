@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { BookOpen, Facebook, Globe, Mail, Phone, ChevronDown, ChevronUp, GraduationCap, Monitor, Heart } from 'lucide-react-native';
 import { colors, createThemedStyles } from '@/constants/colors';
 import { elevation, radii, spacing } from '@/constants/theme';
@@ -36,16 +37,13 @@ const SOCIAL_LINKS = [
   { label: 'Blog Site', icon: Globe, url: 'https://phnupdates.blogspot.com', color: '#F97316' },
 ];
 
-async function openExternal(url: string) {
-  try {
-    await Linking.openURL(url);
-  } catch (error) {
-    console.log('[AboutUs] Failed to open URL:', error);
-  }
-}
-
 export default function AboutUsScreen() {
+  const router = useRouter();
   const [pubExpanded, setPubExpanded] = useState(false);
+
+  const openInApp = (url: string, title: string) => {
+    router.push({ pathname: '/web-viewer', params: { url, title } });
+  };
   const visiblePubs = pubExpanded ? PUBLICATIONS : PUBLICATIONS.slice(0, 3);
 
   return (
@@ -168,7 +166,7 @@ export default function AboutUsScreen() {
               <PressableScale
                 key={link.url}
                 style={styles.linkRow}
-                onPress={() => { void openExternal(link.url); }}
+                onPress={() => openInApp(link.url, link.label)}
                 haptic
               >
                 <View style={[styles.linkIcon, { backgroundColor: link.color + '18' }]}>
